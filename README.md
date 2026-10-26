@@ -51,8 +51,10 @@ We compared THR against baselines picked to beat it:
   rate, so at one temperature on a known chip the forecast adds little.
 - A cap tuned at 45 °C throttles 16 to 31 % of the time at 50 to 55 °C, where THR misses 3.1 to
   6.6 pp fewer deadlines.
-- When the real chip runs 20 % hotter than assumed, the thermostat throttles up to 29 % of the time
-  at 55 °C. THR stayed at 0 % on all five chip variants we tried. This is THR's distinct gain.
+- When the real chip runs 20 % hotter than assumed, the 88 °C thermostat throttles up to 29 % of the
+  time at 55 °C. THR, given that chip's heating parameters (one heating curve to measure), stayed at
+  0 % on all five chip variants. The thermostat was not retuned per chip, so this shows what a
+  calibrated forecast buys over a fixed threshold.
 - With 25 % deadline slack, the small models still finish on a throttled chip, so throttling costs
   little. There the belief router has higher on-time utility than THR on 6 of 7 traces.
 

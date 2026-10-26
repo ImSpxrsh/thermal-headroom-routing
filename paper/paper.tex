@@ -59,13 +59,16 @@ given THR's own heavy-model budget. With the deadline at the large
 model's median latency and the air between 45 and 55\degc, THR never
 throttles and beats the belief router by 3.9 to 7.5 percentage points
 of deadline misses and 12 to 15\% of energy per on-time frame on every
-trace. All temperature-aware
-policies, THR included, lie on one accuracy-timeliness curve set by
-the share of heavy-model frames, so a thermostat tuned for one chip
-matches THR. THR's own gain shows up when the chip differs from the
-one a rule was tuned for: on a chip 20\% hotter than assumed, the
-thermostat throttles up to 29\% of the time while THR stays at zero. When the deadline has 25\% slack, throttling
-costs little and the belief router wins on on-time utility. Code and
+trace. All temperature-aware policies, THR included, lie on one
+accuracy-timeliness curve set by the share of heavy-model frames, so at
+one ambient on a known chip a well-tuned thermostat matches THR. The
+forecast pays off when conditions move away from the ones a rule was
+tuned for. A duty cap tuned at 45\degc{} throttles 16\% of the time at
+50\degc{} and 31\% at 55\degc, and on a chip 20\% hotter than assumed an
+88\degc{} thermostat throttles up to 29\% of the time, while THR,
+given that chip's measured heating parameters, stays at zero. With 25\%
+deadline slack, throttling costs little and the belief router wins on
+on-time utility. Code and
 outputs are public.%
 \footnote{\url{https://github.com/ImSpxrsh/thermal-headroom-routing}}
 \end{abstract}
@@ -240,6 +243,21 @@ closed loop with the plant. For a given seed, all policies see the same
 pre-drawn latency samples (normal and contended), the same camera
 measurement noise and the same temperature-sensor noise.
 
+\textit{Frame timing.} The traces were recorded at 10\,Hz, and each
+recorded frame is one routing decision. The chosen configuration runs
+once on that frame, its latency is drawn from the profiled
+distribution, and the result counts as a miss if it exceeds $D$. Late
+results are dropped: there is no queue, so a late frame never delays
+the next one. Power for the decision is charged through the duty
+$u(c)$, so C1, whose median latency equals $D$, keeps the GPU busy for
+the whole period, and cheaper configurations leave it idle for the
+rest of it. The thermal model advances $\Delta t=0.1$\,s per decision.
+A camera consumed at the deadline rate would instead space decisions
+by $D$, 211 to 341\,ms, which multiplies $\Delta t/\tau$ by 2.1 to 3.4.
+That is the same as a shorter time constant in decision units, and the
+$\tau\times0.5$ chip of \S\ref{sec:plant} covers it with the same
+conclusions as the base plant.
+
 % ---------------------------------------------------------------
 \section{Policies}
 \label{sec:thr}
@@ -292,7 +310,8 @@ of \cite{roy2026beliefspace}: the full TartanDrive drive, which has
 no camera faults and is our negative control, a 309-frame
 stretch of rough terrain, RADIATE rain, snow, fog and night, and
 WoodScape fisheye video with real soiling masks. Each trace is repeated
-to fill a 1200-frame mission (2 minutes at 10\,Hz).
+to fill a 1200-decision mission (2 minutes at the 10\,Hz recording
+rate).
 
 \textit{Experiments.} E1 re-scores the original fault-coupled contention
 schedule for bursts of misses. E2 sweeps ambient temperature from 20 to
@@ -461,7 +480,7 @@ Ambient & Thr. & Miss & Acc. & Thr. & Miss & Acc. \\
 \end{tabular}
 \end{table}
 
-\subsection{A different chip}
+\subsection{A different chip, with a calibrated forecast}
 \label{sec:plant}
 The thermostat's threshold and the caps were set for one plant. In E6
 the true chip differs from Table~\ref{tab:params} and THR is given the
@@ -479,6 +498,20 @@ the difference was exactly zero. On the slow-heating chip
 ($\tau\times2$) at 45\degc{} Belief never throttled within the two
 minutes, so THR's 3.7 to 4.4 point gain there comes from rationing C1
 alone.
+
+This comparison favours THR in one respect: THR gets the new chip's
+$R_{\mathrm{th}}$ and $\tau$, and the thermostat keeps its 88\degc{}
+threshold. The experiment measures what a calibrated forecast buys over
+an uncalibrated threshold; whether THR copes with hardware it knows
+nothing about remains untested. Calibration is cheap: one 7-minute heating curve
+gave $R_{\mathrm{th}}$ and $\tau$ for the M5 (\S\ref{sec:m5}). The
+thermostat could be retuned instead, but its right threshold depends on
+both the chip and the ambient (\S\ref{sec:simple}), so it would need a
+sweep for each pair. We did not run a retuned thermostat, and we did
+not test an uncalibrated THR on the hotter chips at 55\degc. The
+closest evidence is E4 (Table~\ref{tab:misspec}): at 45\degc, THR with
+$R_{\mathrm{th}}$ off by 30\% in either direction never throttled,
+and only its miss reduction changed.
 
 \begin{table*}[t]
 \caption{A different true chip (E6). THR uses the matching model.
