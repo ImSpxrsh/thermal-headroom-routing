@@ -58,6 +58,12 @@ We compared THR against baselines picked to beat it:
 - With 25 % deadline slack, the small models still finish on a throttled chip, so throttling costs
   little. There the belief router has higher on-time utility than THR on 6 of 7 traces.
 
+Repeating the heat experiment with physically consistent frame timing (each decision lasts one
+deadline period of wall-clock time, newest frame taken, late work abandoned;
+`src/run_consistent_timing.py`) gives the same conclusions with larger effects: THR misses 6.2 to
+9.5 pp fewer deadlines than the belief router at 45 to 55 °C and never throttles, while the 88 °C
+thermostat throttles up to 4.9 % at 55 °C even on the base chip.
+
 When camera faults also add compute load, combining THR with fault-aware routing beats the belief
 router by 5.8 to 13.3 pp at 45 and 55 °C. Giving THR a wrong thermal model never brought throttling
 back; it only shifts THR along the accuracy-timeliness curve.

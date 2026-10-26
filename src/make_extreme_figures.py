@@ -443,6 +443,49 @@ def summary(d):
     return S
 
 
+def tab_timing():
+    """E11: heat experiment with physically consistent frame timing (one decision per D)."""
+    path = ROOT / "outputs" / "extreme_env" / "consistent_timing.json"
+    if not path.exists():
+        return {}
+    d = json.load(open(path))
+    T = d["tracks"]; tr = list(T)
+    rows, S = [], {"D_ms": [T[t]["D_s"] * 1e3 for t in tr], "H": [T[t]["H"] for t in tr]}
+    for amb in ("35", "45", "50", "55"):
+        E = [T[t]["base"][amb] for t in tr]
+        mean = lambda p, k: float(np.mean([e[p][k]["mean"] for e in E]))
+        d_b = [e["thermal"]["miss_reduction_vs_decoupled"] for e in E]
+        d_t = [e["thr_vs_thermostat_miss"] for e in E]
+        d_m = [e["thr_vs_duty_matched_miss"] for e in E]
+        d_c = [e["thr_vs_cap45_miss"] for e in E]
+        rows.append(" & ".join([f"{amb}\\degc",
+                                f"{mean('decoupled','throttled_frac')*100:.1f}",
+                                f"{mean('thermostat','throttled_frac')*100:.1f}",
+                                f"{mean('cap45','throttled_frac')*100:.1f}",
+                                f"{mean('thermal','throttled_frac')*100:.1f}",
+                                rng([q["mean"] for q in d_b]), signed_count(d_b),
+                                signed_count(d_t), signed_count(d_m), signed_count(d_c)]) + r" \\")
+        S[amb] = {"belief_thr": _rg(E, lambda e: e["decoupled"]["throttled_frac"]["mean"]),
+                  "tst_thr_max": max(e["thermostat"]["throttled_frac"]["mean"] for e in E),
+                  "cap45_thr": _rg(E, lambda e: e["cap45"]["throttled_frac"]["mean"]),
+                  "thr_thr_max": max(e["thermal"]["throttled_frac"]["mean"] for e in E),
+                  "mb_thr_max": max(e["duty_matched"]["throttled_frac"]["mean"] for e in E),
+                  "thr_vs_b": _rg(E, lambda e: e["thermal"]["miss_reduction_vs_decoupled"]["mean"]),
+                  "thr_vs_b_sig": signed_count(d_b), "thr_vs_tst": _rg(E, lambda e: e["thr_vs_thermostat_miss"]["mean"]),
+                  "thr_vs_tst_sig": signed_count(d_t), "thr_vs_mb": _rg(E, lambda e: e["thr_vs_duty_matched_miss"]["mean"]),
+                  "thr_vs_mb_sig": signed_count(d_m), "thr_vs_cap_sig": signed_count(d_c),
+                  "thr_vs_cap": _rg(E, lambda e: e["thr_vs_cap45_miss"]["mean"]),
+                  "energy_rel": float(np.mean([e["thermal"]["energy_reduction_vs_decoupled"]["mean"] /
+                                               e["decoupled"]["energy_per_ontime_j"]["mean"] for e in E])),
+                  "util_sig": signed_count([e["thermal"]["utility_gain_vs_decoupled"] for e in E])}
+    for name in ("R_x1.2", "tau_x0.5"):
+        E = [T[t]["plants"][name] for t in tr]
+        S[name] = {p: max(e[p]["throttled_frac"]["mean"] for e in E) for p in ("decoupled", "thermostat", "thermal")}
+    (TAB / "tab_timing.tex").write_text("\n".join(rows) + "\n")
+    (TAB / "timing_summary.json").write_text(json.dumps(S, indent=1))
+    return S
+
+
 def main():
     d = json.load(open(ROOT / "outputs" / "extreme_env" / "extreme_env.json"))
     FIG.mkdir(parents=True, exist_ok=True); TAB.mkdir(exist_ok=True)
@@ -450,6 +493,7 @@ def main():
     tab_heat(d); tab_efficiency(d); tab_caps(d); tab_compound(d); tab_misspec(d)
     tab_deadline(d); tab_plant(d); tab_bursts(d)
     summary(d)
+    tab_timing()
     print("figures ->", FIG, "| tables ->", TAB)
 
 

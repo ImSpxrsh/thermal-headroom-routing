@@ -153,7 +153,8 @@ def run_closed_loop(kind: str, sub, lat_dists, model: ThermalModel, t_amb: float
                     policy_model: Optional[ThermalModel] = None,
                     temp_noise_c: float = 1.0, c1_budget: float = 1.0,
                     return_trace: bool = False, duty: Optional[Dict[str, float]] = None,
-                    thr_params: Optional[dict] = None, t_set: float = 88.0) -> dict:
+                    thr_params: Optional[dict] = None, t_set: float = 88.0,
+                    frame_stride: float = 1.0) -> dict:
     """Run one policy in closed loop with the thermal plant over n_frames (the real
     trace is tiled to reach a mission-length run). exo_contention (bool per frame of
     the tiled run) adds an exogenous contention source on top of throttling (the
@@ -171,7 +172,9 @@ def run_closed_loop(kind: str, sub, lat_dists, model: ThermalModel, t_amb: float
     horizon_frames / margin_c (sensitivity analysis).
     """
     T0 = sub.T
-    idx = np.arange(n_frames) % T0
+    # frame_stride > 1: decisions are spaced further apart than the 10 Hz recording, and
+    # each decision takes the newest recorded frame (latest-frame scheduling).
+    idx = np.floor(np.arange(n_frames) * frame_stride).astype(int) % T0
     s_bel = sub.s_belief[idx]
     acc = {c: sub.acc[c][idx] for c in pol.CONFIG_KEYS}
     duty = duty if duty is not None else config_duty(sub.fm, lat_dists)

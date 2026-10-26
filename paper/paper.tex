@@ -66,9 +66,10 @@ forecast pays off when conditions move away from the ones a rule was
 tuned for. A duty cap tuned at 45\degc{} throttles 16\% of the time at
 50\degc{} and 31\% at 55\degc, and on a chip 20\% hotter than assumed an
 88\degc{} thermostat throttles up to 29\% of the time, while THR,
-given that chip's measured heating parameters, stays at zero. With 25\%
-deadline slack, throttling costs little and the belief router wins on
-on-time utility. Code and
+given that chip's measured heating parameters, stays at zero. These
+results hold, with larger effects, when every decision is given one
+deadline period of wall-clock time. With 25\% deadline slack,
+throttling costs little and the belief router wins on on-time utility. Code and
 outputs are public.%
 \footnote{\url{https://github.com/ImSpxrsh/thermal-headroom-routing}}
 \end{abstract}
@@ -243,20 +244,17 @@ closed loop with the plant. For a given seed, all policies see the same
 pre-drawn latency samples (normal and contended), the same camera
 measurement noise and the same temperature-sensor noise.
 
-\textit{Frame timing.} The traces were recorded at 10\,Hz, and each
-recorded frame is one routing decision. The chosen configuration runs
-once on that frame, its latency is drawn from the profiled
-distribution, and the result counts as a miss if it exceeds $D$. Late
-results are dropped: there is no queue, so a late frame never delays
-the next one. Power for the decision is charged through the duty
-$u(c)$, so C1, whose median latency equals $D$, keeps the GPU busy for
-the whole period, and cheaper configurations leave it idle for the
-rest of it. The thermal model advances $\Delta t=0.1$\,s per decision.
-A camera consumed at the deadline rate would instead space decisions
-by $D$, 211 to 341\,ms, which multiplies $\Delta t/\tau$ by 2.1 to 3.4.
-That is the same as a shorter time constant in decision units, and the
-$\tau\times0.5$ chip of \S\ref{sec:plant} covers it with the same
-conclusions as the base plant.
+\textit{Frame timing.} In the main experiments the traces play at their
+10\,Hz recording rate and each recorded frame is one routing decision.
+The chosen configuration runs once on that frame, its latency is drawn
+from the profiled distribution, and the result counts as a miss if it
+exceeds $D$. Late results are dropped, so there is no queue and a late
+frame never delays the next one. Power is charged through the duty
+$u(c)$, and the thermal model advances $\Delta t=0.1$\,s per decision.
+Because C1 takes about $D$ (211 to 341\,ms) to run, this compresses
+wall-clock time by a factor of 2.1 to 3.4. Section~\ref{sec:timing}
+repeats the heat experiment with physically consistent timing, where
+every decision lasts exactly $D$, and the conclusions hold.
 
 % ---------------------------------------------------------------
 \section{Policies}
@@ -319,7 +317,8 @@ schedule for bursts of misses. E2 sweeps ambient temperature from 20 to
 contention on top of throttling. E4 gives THR a wrong $R_{\mathrm{th}}$
 or $\tau$. E5 relaxes the deadline. E6 changes the true chip. E7 and E8
 vary THR's $H$ and $m$ and the thermostat threshold, as sensitivity
-analyses. E9 sweeps fixed C1 caps between 0.2 and 1.0.
+analyses. E9 sweeps fixed C1 caps between 0.2 and 1.0. E11 repeats
+E2 with physically consistent frame timing (\S\ref{sec:timing}).
 
 \textit{Protocol.} Following the validation-locked protocol of
 \cite{zhou2026matchedinput}, every setting behind the headline numbers
@@ -531,6 +530,55 @@ True chip & $\Delta$ THR & Sig. & Belief & Tst. & THR && $\Delta$ THR & Sig. & B
 \bottomrule
 \end{tabular}
 \end{table*}
+
+\subsection{Physically consistent frame timing}
+\label{sec:timing}
+In E11 each decision lasts one deadline period $D$ of wall-clock time.
+The thermal plant integrates over $\Delta t=D$ per decision. At each
+decision the router takes the newest recorded frame, so decision $k$
+uses the trace frame at time $kD$ and the frames in between are
+skipped, as in a latest-frame robot pipeline. Inference still running
+at the next boundary is abandoned, so work never overlaps, and THR's
+horizon stays 5\,s of wall-clock time (15 to 24 decisions). Missions
+are 1200 decisions, 4.2 to 6.8 minutes. Policies, seeds and the
+88\degc{} thermostat are unchanged, and the 45\degc{} cap is retuned
+under the new timing.
+
+Table~\ref{tab:timing} shows the same picture, with larger effects.
+Belief is throttled 14 to 17\% of the mission at 45\degc{} and 36 to
+43\% at 55\degc, and THR is never throttled. Between 45 and 55\degc{}
+THR misses 6.2 to 9.5 points fewer deadlines than Belief and 1.5 to 4.1
+fewer than the thermostat, on every trace. Its on-time utility beats
+Belief's on every trace too, at 15 to 18\% less energy per on-time
+frame. Because each
+decision now heats the chip by more, the 88\degc{} thermostat throttles
+up to 4.9\% of the mission at 55\degc{} on the base chip, and up to
+39\% on the chip with 20\% higher $R_{\mathrm{th}}$ and 17\% on the
+chip with half the time constant, where THR stays at zero. The cap
+tuned at 45\degc{} throttles 20 to 25\% of the mission at 50\degc. The
+matched budget still ties THR on misses at every ambient, so the
+budget explanation of \S\ref{sec:simple} carries over.
+
+\begin{table}[t]
+\caption{E11, consistent frame timing (one decision per $D$), mean
+over traces. Thr.: \% of the mission throttled for Belief (B), the
+88\degc{} thermostat (Tst), the cap tuned at 45\degc{} and THR.
+$\Delta$: THR's miss reduction relative to Belief (pp, range over
+traces). Last four columns: traces where THR is Holm-significantly
+better / worse than each policy on miss rate (MB: matched budget).}
+\label{tab:timing}
+\centering\scriptsize
+\setlength{\tabcolsep}{2.2pt}
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+& \multicolumn{4}{c}{Thr.\ (\%)} & & \multicolumn{4}{c}{THR vs} \\
+\cmidrule(lr){2-5}\cmidrule(l){7-10}
+Amb. & B & Tst & Cap & THR & $\Delta$ (pp) & B & Tst & MB & Cap \\
+\midrule
+\tabinput{tables/tab_timing.tex}
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{When the deadline has slack}
 \label{sec:slack}
