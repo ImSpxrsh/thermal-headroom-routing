@@ -41,3 +41,13 @@ data/radiate/
 # Agent tooling (local only, not part of the research artifact)
 .agents/
 skills-lock.json
+
+# LaTeX build intermediates (paper.pdf is committed)
+paper/*.aux
+paper/*.log
+paper/*.blg
+paper/*.bbl
+paper/*.out
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz

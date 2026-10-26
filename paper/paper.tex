@@ -1,750 +1,564 @@
-\documentclass[conference]{IEEEtran}
-\IEEEoverridecommandlockouts
+\documentclass[conference,compsoc]{IEEEtran}
 
 \usepackage{cite}
-\usepackage{amsmath,amssymb,amsfonts}
-\usepackage{algorithmic}
-\usepackage{algorithm}
+\usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{booktabs}
-\usepackage{multirow}
 \usepackage{url}
 \usepackage{microtype}
-\usepackage{tikz}
-\usetikzlibrary{calc,positioning,arrows.meta}
+\usepackage{gensymb}
 
 \graphicspath{{figures/}}
-
-\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
-    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\newcommand{\degc}{\,\textdegree C}
+\newcommand{\pp}{\,pp}
+% expandable \input so generated table rows may start with \multicolumn
+\makeatletter\newcommand{\tabinput}[1]{\@@input #1 }\makeatother
 
 \begin{document}
 
-\title{Belief-Space Perception Routing:\\
-Coupling Sensor-Fault and Compute-Contention Beliefs\\
-for Deadline-Constrained Adaptive Inference}
+\title{Thermal-Headroom Routing for Efficient Robot Perception in Extreme Heat}
 
 \author{
-  \IEEEauthorblockN{Sparsh Roy}
-  \IEEEauthorblockA{
-    \textit{Artificial Intelligence Research Group (AIRG)}\\
-    New Jersey, USA
-  }
-  \and
-  \IEEEauthorblockN{Vihan Aggarwal}
-  \IEEEauthorblockA{
-    \textit{Independent Researcher}\\
-    USA
-  }
+\IEEEauthorblockN{Sparsh Roy\IEEEauthorrefmark{1}\IEEEauthorrefmark{2}\IEEEauthorrefmark{3},
+Arhaan Shah\IEEEauthorrefmark{4},
+Kevin Zhou\IEEEauthorrefmark{2},
+\underline{\hspace{2.2cm}}\IEEEauthorrefmark{4},
+\underline{\hspace{2.2cm}}\IEEEauthorrefmark{4},
+\underline{\hspace{2.2cm}}\IEEEauthorrefmark{4}}
+\IEEEauthorblockA{\IEEEauthorrefmark{1}Massachusetts Institute of Technology, Cambridge, MA, USA}
+\IEEEauthorblockA{\IEEEauthorrefmark{2}Hopewell Valley Central High School, Pennington, NJ, USA}
+\IEEEauthorblockA{\IEEEauthorrefmark{4}Paradise Valley High School, Phoenix, AZ, USA}
+\IEEEauthorblockA{\IEEEauthorrefmark{3}Corresponding author: sparshr@mit.edu}
 }
 
 \maketitle
 
 % ---------------------------------------------------------------
 \begin{abstract}
-Deadline-constrained perception must tolerate two failure modes
-usually modeled separately: sensor faults and compute contention. We
-present a \textbf{belief-space perception router} that maintains
-temporally-smoothed beliefs over sensor-fault and compute-contention
-state and \emph{couples} them via a noisy-OR term to route over a
-four-point accuracy--latency frontier (YOLO11x/n~@~1280/640) on three
-real datasets across two camera geometries -- TartanDrive (off-road),
-RADIATE (adverse weather), and WoodScape Soiling (fisheye), five seeds
-and 95\% CIs. \textbf{Where fault and contention are coupled the router
-delivers a clear, well-controlled gain}: it cuts deadline-miss rate by
-$1.1$--$9.4$\,pp (significant over seeds in five of six conditions),
-while every uncoupled control and the fault-free trajectory are exactly
-$0.0$\,pp. The gain is \textbf{portable, not per-trace}: the entire
-belief model (HMM and $\kappa$) trained on one sequence transfers to a
-held-out one, staying significant in five of eight pairs including
-cross-\emph{condition} transfers (rain$\rightarrow$fog $+7.8$\,pp);
-$\kappa$ drives a clean monotonic response (exactly zero at
-$\kappa{=}0$); the belief estimator lifts fault-detection balanced
-accuracy by $3$--$8$ points; and routing costs ${\approx}19\,\mu$s/frame,
-negligible against inference. We then scope the result honestly: the
-benefit concentrates at the tight median-latency deadline, and --
-testing whether such coupling arises \emph{without} manipulation across
-eight RADIATE sequences and three independent load proxies -- after
-Benjamini--Hochberg correction none of 24 tests show natural coupling,
-so we release the full falsification pipeline for any deployment
-(notably a shared-SoC/Jetson stack, where contention is most likely to
-couple) to test its own regime. Deadline-miss conclusions are
-independent of pseudo-ground-truth; accuracy and utility numbers are
-internal-consistency only, since a real-annotation check shows the
-pseudo-GT config ranking differs from ground truth. All code, data
-splits, and results are released.\footnote{\url{https://github.com/VihanAggarwal/belief-space-perception-routing}}
+A robot working in a Phoenix summer runs its detector on a small
+embedded processor that heats itself. Once that processor hits its
+thermal limit, the frequency governor throttles it and every detector
+configuration gets slower at the same time. Adaptive inference routers,
+which pick a model size and input resolution for each frame, usually
+treat this slowdown as outside interference. In hot weather the router
+causes it. We model the effect with a lumped RC thermal model wired in
+closed loop to a deadline-constrained router over four YOLO11
+configurations. We also propose Thermal-Headroom Routing (THR), which
+forecasts the processor temperature in closed form before committing
+to a configuration and skips any configuration that would push the chip
+past its throttle threshold. We tested it on seven real traces with
+camera degradation (off-road driving, rain, snow, fog, night, and lens
+soiling), eight ambient temperatures, and five seeds. At 45\degc{} and
+55\degc{} THR never throttled. A router driven only by latency belief
+spent 11 to 38\% of each mission throttled. THR also lowered the
+deadline-miss rate by 3.9 to 7.4 percentage points and energy per
+on-time frame by 11 to 13\%, and it costs about 7\,$\mu$s per frame. At
+35\degc{} and below it makes the same decisions as the baseline. A
+control that gets the same share of heavy-model frames, but no
+temperature reading, reaches the same miss rate. The miss-rate gain
+therefore comes from the amount of heavy inference the router allows.
+What the thermal forecast adds is a way to find that amount online, at
+any ambient temperature, while keeping throttling at zero. Code and
+outputs are public.%
+\footnote{\url{https://github.com/ImSpxrsh/thermal-headroom-routing}}
 \end{abstract}
 
 \begin{IEEEkeywords}
-adaptive inference, sensor fault belief, compute contention,
-perception routing, deadline-constrained inference, RADIATE,
-TartanDrive, WoodScape, hidden Markov model
+efficient inference, adaptive model selection, thermal throttling,
+edge AI, robot perception, extreme environments
 \end{IEEEkeywords}
 
 % ---------------------------------------------------------------
 \section{Introduction}
-\label{sec:intro}
 
-Autonomous robots in unstructured environments face two failure
-modes that are usually modeled independently. Sensor channels
-degrade -- cameras occluded by mud or rain, washed out at night, or
-fogged -- while onboard compute is contested, as a single edge
-processor concurrently services perception, planning, and control.
-These need not be independent: terrain-induced sensor degradation
-may coincide with increased control or localization workload, though
-whether and how often this occurs in practice is an empirical
-question we return to directly (\S\ref{sec:rqcoupling}). If it does
-co-occur, treating fault and contention as independent signals lets
-a router select a compute-heavy config exactly when it can least
-afford to execute it, or trust a degraded channel because no fault
-signal arrived within the latency window.
+Consider a Jetson-class module in a sealed enclosure on a robot in the
+Sonoran Desert. The air is at 45\degc. If the perception stack runs its
+largest detector on every frame, the chip reaches its throttle limit in
+about a minute. The governor then down-clocks it, and the small models
+slow down along with the large one until the chip cools
+\cite{bhat2019power}. In our simulations a policy that always runs the
+large model goes blind for 12.5\,s at a stretch at 45\degc, and for
+91\,s at 55\degc{} (we count a blackout as a run of consecutive
+deadline misses).
 
-Existing work addresses each stressor in isolation: fault-tolerant
-fusion down-weights degraded modalities
-\cite{antonante2022monitoring,tian2025fault}; compute-aware routers
-select inference paths from a budget
-\cite{laskaridis2021adaptive,teerapittayanon2016branchynet}. No prior
-work, to our knowledge, estimates both beliefs and exploits their
-coupling. This paper (i) formulates the coupled belief state via
-per-channel switching HMMs and a two-state compute HMM fit without
-task-specific labels, and (ii) a noisy-OR joint policy with a coupling
-coefficient $\kappa$ fit on held-out calibration draws. Empirically,
-(iii) wherever fault and contention are coupled the router delivers a
-real and \emph{portable} gain: it cuts deadline-miss by $1.1$--$9.4$\,pp
-across three datasets and two camera geometries, the entire belief model
-(HMM and $\kappa$) transfers to held-out sequences and even across
-weather conditions, the belief estimator improves fault detection by
-$3$--$8$ points, and routing costs ${\approx}19\,\mu$s/frame -- all with
-falsification controls at exactly zero. Finally, (iv) we stress-test the
-single assumption the gain rests on -- that fault and contention
-actually co-occur -- with five checks (a multiple-testing-corrected
-measurement on real data across three independent load proxies,
-cross-sequence transfer, oracle/reactive baselines, and a real-GT
-accuracy validation), reporting the null honestly and releasing the full
-reproducible pipeline so any deployment can test its own
-regime.\footnotemark[1]
+Adaptive inference is the usual answer to a tight latency budget.
+Early-exit networks and routers choose cheaper computation per input or
+per frame \cite{teerapittayanon2016branchynet,laskaridis2021adaptive,wang2021notallimages},
+and some also watch current compute load. All of them react to latency
+after it has risen. In heat that reaction comes late, because the
+slowdown was set up by earlier choices and lasts for tens of seconds
+once it starts. Thermal-aware scheduling for multiprocessors has dealt
+with this kind of delayed feedback for years
+\cite{coskun2007temperature,skadron2003hotspot}, and planetary rovers
+plan compute around thermal and power limits
+\cite{verma2023perseverance}. Per-frame model selection has not used
+those ideas. Belief-space perception routing \cite{roy2026beliefspace},
+which this work extends, tracks camera-fault and compute-contention
+beliefs together but leaves thermal effects out of its contention model.
 
-Fig.~\ref{fig:summary} previews the headline result: the joint policy
-reduces deadline-miss rate when the experimentally-imposed coupling
-is enabled, from small (rain $+1.1$\,pp) to large (fog $+9.4$\,pp),
-tracking fault \emph{severity} more than frequency -- fog has the
-fewest faults yet the largest effect -- and is exactly zero in every
-uncoupled control and on the fault-free trajectory.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\columnwidth]{fig_rqh_summary.png}
-  \caption{Headline result (RQ-H): coupling-aware routing reduces
-  deadline misses under controlled, fault-conditioned contention.
-  Deadline-miss reduction of the joint policy over the decoupled
-  baseline, with 95\% CIs over 5 seeds. Filled circles: coupling
-  enabled, CI excludes zero; square: coupling enabled, not
-  significant (snow). Grey crosses: matched uncoupled control,
-  exactly $0.0$\,pp. TartanDrive appears twice (full trajectory:
-  clean negative control; off-road segment: real faults, real
-  benefit).}
-  \label{fig:summary}
-\end{figure}
+Our contributions:
+(i) a closed-loop model of thermal contention for adaptive inference,
+in which the router's configuration choice sets the power input to an
+RC thermal node with a hysteretic throttle (\S\ref{sec:model});
+(ii) THR, a closed-form rule that keeps the forecast temperature under
+the throttle limit at about 7\,$\mu$s per frame and works alongside
+fault-aware routing \cite{roy2026beliefspace} (\S\ref{sec:thr});
+(iii) an evaluation on seven real degraded-camera traces over eight
+ambient temperatures, with a cool-weather negative control and a
+matched-budget control in the spirit of the matched-input controls in
+\cite{zhou2026matchedinput}, which tells apart the effect of how much
+heavy inference runs from the effect of when it runs
+(\S\ref{sec:results}); and
+(iv) power, energy and accuracy accounting for every policy, plus a
+test of THR with a wrong thermal model.
 
 % ---------------------------------------------------------------
 \section{Related Work}
-\label{sec:related}
 
-TartanDrive \cite{triest2022tartandrive,sivaprakasam2024tartandrive2}
-provides large-scale off-road driving data; RADIATE
-\cite{sheeny2021radiate} real adverse-weather stereo sequences;
-WoodScape \cite{yogamani2019woodscape} fisheye frames with real
-soiling masks -- together two camera geometries and multiple
-degradation physics. Sensor-fault monitoring is typically
-deterministic or binary
-\cite{antonante2022monitoring,bogdoll2022anomaly,hou2023fault};
-recent stress-testing \cite{tian2025fault} and the RoboDrive
-Challenge \cite{robodrive2024} show accuracy collapses under
-per-stream corruption but do not model a continuous, coupled belief.
-Compute-aware inference -- BranchyNet \cite{teerapittayanon2016branchynet},
-early-exit surveys \cite{laskaridis2021adaptive}, dynamic transformers
-\cite{wang2021notallimages}, and driving-specific early-exiting
-\cite{adee2025,navee2025,temporalpatience2023} -- treats the compute
-budget as a constant or per-frame observable, not a latent state
-estimated jointly with sensor fault. PRAM-R \cite{pramr2025} routes
-modalities via an LLM but does not estimate compute contention;
-adaptive fusion \cite{mees2016choosing} and DynMM \cite{dynmm} gate
-modalities without modeling compute. To our knowledge, no prior work
-couples a temporally-smoothed sensor-fault belief to a
-compute-contention belief and tests their empirical coupling for
-deadline-constrained routing.
+\textit{Adaptive and efficient inference.} Early-exit networks
+\cite{teerapittayanon2016branchynet,laskaridis2021adaptive}, dynamic
+transformers \cite{wang2021notallimages} and early exiting for driving
+\cite{adee2025,navee2025,temporalpatience2023} vary computation with
+the input. Modality gating \cite{dynmm,mees2016choosing,pramr2025}
+decides which sensors to process at all. These methods treat the
+compute budget as fixed or as something they observe. None of them
+models the budget as a state their own decisions change.
+
+\textit{Sensor- and compute-aware routing.} Belief-space perception
+routing \cite{roy2026beliefspace} tracks blur, illumination and
+occlusion faults per camera channel with switching HMMs, keeps a
+latency-based contention belief, and fuses the two with a noisy-OR
+term. When faults and contention were made to co-occur, that fusion cut
+deadline misses by 1.1 to 9.4 percentage points. Its contention signal
+comes from outside the router and has two states. We reuse its fault
+beliefs, frontier and traces and add a thermal plant that the router
+drives.
+
+\textit{Thermal management.} HotSpot-style RC models
+\cite{skadron2003hotspot} and temperature-aware MPSoC scheduling
+\cite{coskun2007temperature} predict hot spots and schedule around
+them. Measurements on commercial phone SoCs show throttling dominating
+sustained performance \cite{bhat2019power}. We apply the same
+forecasting idea to per-frame model selection, where the thing being
+chosen is a point on the accuracy-latency curve.
+
+\textit{Datasets.} The traces come from TartanDrive off-road driving
+\cite{triest2022tartandrive,sivaprakasam2024tartandrive2}, RADIATE
+adverse weather \cite{sheeny2021radiate} and WoodScape fisheye soiling
+\cite{yogamani2019woodscape}.
 
 % ---------------------------------------------------------------
-\section{Method}
-\label{sec:method}
+\section{System Model}
+\label{sec:model}
 
-\begin{figure}[t]
-  \centering
-  \resizebox{\columnwidth}{!}{%
-  \begin{tikzpicture}[
-    font=\scriptsize,
-    >={Stealth[length=1.6mm]},
-    node distance=4mm and 6mm,
-    io/.style={draw=black, rectangle, align=center, minimum height=7mm,
-               text width=13mm, inner sep=1.5pt, fill=black!3},
-    blk/.style={draw=black, rectangle, rounded corners=1.5pt, align=center,
-                minimum height=7mm, text width=15mm, inner sep=1.5pt},
-    acc/.style={draw=black, rectangle, rounded corners=1.5pt, align=center,
-                minimum height=7mm, text width=16mm, inner sep=1.5pt, fill=black!8},
-    lbl/.style={font=\tiny, inner sep=1pt}
-  ]
-    \node[io] (frame) {Camera frame};
-    \node[blk, right=of frame] (health) {Per-channel health};
-    \node[blk, right=of health] (shmm) {Sensor HMM};
-    \node[blk, below=6mm of shmm] (chmm) {Compute HMM};
-    \node[io] (lat) at (frame |- chmm) {Latency stream};
-    \node[acc] (couple) at ($(shmm)!0.5!(chmm)+(2.0cm,0)$)
-      {Noisy-OR ($\kappa$)};
-    \node[blk, right=10mm of couple, text width=17mm] (router)
-      {Router: feasible, max acc.};
-    \node[blk, above=5mm of router, text width=17mm] (frontier)
-      {Frontier C1--C4};
-    \node[io, right=of router] (out) {Config};
+\textit{Frontier and deadline.} There are four configurations, from most
+to least expensive: C1 is YOLO11x at 1280\,px, C2 is YOLO11x at 640, C3
+is YOLO11n at 1280 and C4 is YOLO11n at 640. Their per-frame latencies
+were profiled under normal and contended compute in
+\cite{roy2026beliefspace}. The deadline $D$ is C1's median latency
+under normal compute, between 211 and 341\,ms depending on the trace.
+C1 therefore meets $D$ about half the time on a cool chip and almost
+never on a slowed one. C2, C3 and C4 always meet it. Accuracy is the
+IoU-matched F1 agreement between a configuration's detections and C1's
+on the same frame. The earlier study found that this pseudo-ground
+truth ranks configurations differently from real annotations
+\cite{roy2026beliefspace}, so we treat every accuracy number here as an
+internal consistency check. Deadline-miss, throttling and energy
+results do not depend on it.
 
-    \draw[->] (frame) -- (health);
-    \draw[->] (health) -- (shmm);
-    \draw[->] (lat) -- (chmm);
-    \draw[->] (shmm.east) -- (couple.west) node[lbl,midway,above]{$b_f$};
-    \draw[->] (chmm.east) -- (couple.west) node[lbl,midway,below]{$b_c$};
-    \draw[->] (couple) -- (router) node[lbl,midway,above]{$p_{\mathrm{cont}}$};
-    \draw[->] (frontier) -- (router);
-    \draw[->] (router) -- (out);
-  \end{tikzpicture}}
-  \caption{System overview. Per-channel image health feeds a
-  switching HMM for sensor-fault belief $b_f$; recent latencies feed
-  a two-state HMM for compute belief $b_c$. Noisy-OR fusion
-  (Eq.~\ref{eq:noisyor}) gives $p_{\mathrm{cont}}$; the router picks
-  the most accurate feasible config. The decoupled baseline sets
-  $p_{\mathrm{cont}}=b_c$ (no $b_f$ term).}
-  \label{fig:overview}
-\end{figure}
+\textit{Thermal plant.} We model the SoC as one thermal node with time
+constant $\tau$ and junction-to-ambient resistance $R_{\mathrm{th}}$:
+\begin{equation}
+T_{t+1} = T_t + \tfrac{\Delta t}{\tau}\big(T_{\mathrm{amb}} + R_{\mathrm{th}}\,P_t - T_t\big).
+\label{eq:rc}
+\end{equation}
+Power depends on the configuration $c_t$ served at frame $t$:
+$P_t = s_t\,[P_{\mathrm{idle}} + (P_{\max}-P_{\mathrm{idle}})\,u(c_t)]$.
+Here $u(c)=\min(1,\tilde{\ell}_c/D)$ is the configuration's median
+normal-compute latency as a fraction of the deadline, and $s_t$ is 0.6
+while throttled and 1 otherwise. The governor starts throttling at
+$T\ge T_{\mathrm{hi}}$ and stops at $T\le T_{\mathrm{lo}}$. While it
+throttles, every configuration's latency is drawn from its profiled
+contended distribution, whose p95 is about $2.5\times$ the normal one.
+Table~\ref{tab:params} lists the parameters. They are typical of a
+Jetson Orin module and were chosen before any run, but we did not
+measure them. Running C1 nonstop settles at $T_{\mathrm{amb}}+50$\degc,
+so throttling starts once the air is above 40\degc. The repository
+includes a Jetson harness that logs \texttt{tegrastats} temperature and
+power, which can supply measured values.
 
-\textbf{Frontier.} Four configs ordered by accuracy--latency:
-\textbf{C1} YOLO11x@1280 (reference/pseudo-GT), \textbf{C2}
-YOLO11x@640, \textbf{C3} YOLO11n@1280, \textbf{C4} YOLO11n@640.
-Task accuracy is IoU-matched detection-agreement F1 with C1 on the
-same frame (pseudo-GT; validated against real annotations in
-\S\ref{sec:rqcoupling}e, where it is shown to be an internal
-consistency check only). The deadline is the median end-to-end C1
-latency under nominal compute, so C1 is borderline-feasible
-uncontended and infeasible under contention while cheaper configs
-remain feasible -- real routing pressure without hand-tuning, and a
-device-agnostic comparison. Table~\ref{tab:frontier} shows the
-pseudo-GT frontier produces a consistent internal agreement ordering
-on the selected tracks (C1 highest, C4 lowest) and the
-contention-induced agreement gap that must be traded against
-timeliness ($0.24$--$0.53$ absolute F1 between C1 and C4) --
-\emph{under the pseudo-GT metric}; the deadline-miss numbers below do
-not depend on this metric at all.
-
-\begin{table}[htbp]
-\caption{Accuracy--latency frontier (selected tracks). Accuracy =
-IoU-matched F1 vs.\ C1 (pseudo-GT). Latencies are dev-environment
-(Apple M5/MPS); C1 alone misses the self-calibrated deadline under
-contention.}
-\label{tab:frontier}
-\centering
-\footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{llccc}
+\begin{table}[t]
+\caption{Thermal-plant parameters (typical values, fixed before any run).}
+\label{tab:params}
+\centering\footnotesize
+\begin{tabular}{@{}lc@{\hspace{10pt}}lc@{}}
 \toprule
-\textbf{Track (deadline)} & \textbf{Cfg} & \textbf{Model@imgsz} & \textbf{Acc.} \\
-\midrule
-\multirow{4}{*}{A (211\,ms)}
- & C1 & YOLO11x@1280 & 1.000 \\
- & C2 & YOLO11x@640  & 0.746 \\
- & C3 & YOLO11n@1280 & 0.717 \\
- & C4 & YOLO11n@640  & 0.713 \\
-\midrule
-\multirow{4}{*}{D rain (229\,ms)}
- & C1 & YOLO11x@1280 & 1.000 \\
- & C2 & YOLO11x@640  & 0.766 \\
- & C3 & YOLO11n@1280 & 0.752 \\
- & C4 & YOLO11n@640  & 0.733 \\
-\midrule
-\multirow{4}{*}{C soil (341\,ms)}
- & C1 & YOLO11x@1280 & 1.000 \\
- & C2 & YOLO11x@640  & 0.555 \\
- & C3 & YOLO11n@1280 & 0.569 \\
- & C4 & YOLO11n@640  & 0.474 \\
+$\Delta t$ (frame) & 0.1\,s & $P_{\mathrm{idle}}$ / $P_{\max}$ & 5 / 25\,W \\
+$\tau$ & 30\,s & $T_{\mathrm{hi}}$ / $T_{\mathrm{lo}}$ & 90 / 85\degc \\
+$R_{\mathrm{th}}$ & 2.0\,\textdegree C/W & throttled power & $0.6\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Sensor-fault belief.} A 4-state switching HMM per channel
-(nominal/degrading/faulted/recovering), Gaussian emissions,
-transitions fit from labeled segments. Observable health signals:
-blur (Laplacian variance, polar-unwrapped for fisheye), illumination
-(histogram entropy), occlusion (sparse optical-flow track-survival
-rate, or real soiling-mask fraction on the fisheye track). Forward
-filtering gives $b_{f,k}^t=P(z_k^t{=}\text{faulted}\mid o_{1:t})$;
-$b_f^t=\max_k b_{f,k}^t$. On real RADIATE rain the occlusion channel
-reaches balanced accuracy up to $0.95$; on controlled injection with
-known onsets, trackers recover injected faults at balanced accuracy
-$0.85$--$0.89$ with $3$--$6$ frame lag; on the fault-free TartanDrive
-trajectory all channels correctly report no sustained faults. These
-detection-quality numbers use independent ground-truth onsets (Track
-B) or a fault-free negative control, not pseudo-GT.
+\textit{Closed loop.} In \cite{roy2026beliefspace} contention followed
+a fixed schedule, so every policy could be scored against the same
+pre-drawn timeline. Here, whether the chip is throttled at frame $t$
+depends on what the router chose before $t$, so each policy has to run
+in closed loop with the plant. For a given seed, all policies see the
+same pre-drawn latency samples (normal and contended) and the same
+sensor noise.
 
-\textbf{Compute-contention belief.} A 2-state HMM over
-$[\text{p95},\text{p99},\text{queue depth}]$ of recent latencies.
-Contention is induced with device-appropriate load (CUDA threads,
-CPU stress, or on Apple silicon a separate competitor process, since
-Metal command buffers are not thread-safe), producing a
-$\approx\!2.5\times$ p95 latency shift. Forward filtering gives
-$b_c^t=P(z_c^t{=}\text{contended}\mid \ell_{1:t})$.
+% ---------------------------------------------------------------
+\section{Thermal-Headroom Routing}
+\label{sec:thr}
 
-\textbf{Coupled policy.} Both policies pick, among configs feasible
-under the predicted compute state (median latency in that state
-meets the deadline), the one with maximum expected accuracy; they
-differ only in how $p_{\text{cont}}^t$ is formed. Decoupled:
-$p_{\text{cont}}^t=b_c^t$. Joint (noisy-OR):
+All policies use the objective from \cite{roy2026beliefspace}. They
+predict a compute state, keep the configurations whose median latency
+in that state meets $D$, and serve the one with the highest expected
+accuracy given the camera-fault belief $b_f$. A 10-frame dwell keeps
+them from switching back and forth. They differ only in the inputs
+they use.
+
+\textit{Online compute belief.} In closed loop the router only learns
+the latency of the configuration it served, and only one frame later.
+We run a two-state forward filter (stay probabilities 0.95 and 0.90) on
+one binary observation: whether the last latency exceeded $1.5\times$
+that configuration's normal median. The filter output is $b_c$.
+
+\textit{THR.} Let $\hat T$ be the on-die temperature reading (we add
+Gaussian noise with $\sigma=1$\degc). If the router held configuration
+$c$ for $H$ frames, Eq.~\eqref{eq:rc} gives the temperature in closed
+form:
 \begin{equation}
-  p_{\text{cont}}^t = 1 - (1 - b_c^t)\,(1 - \kappa\, b_f^t)
-  \label{eq:noisyor}
+\hat T_{H}(c) = T_{\infty}(c) + \big(\hat T - T_{\infty}(c)\big)\big(1-\tfrac{\Delta t}{\tau}\big)^{H},
+\label{eq:forecast}
 \end{equation}
-with $\kappa$ fit on a held-out calibration draw from the same trace
-(never the test window; fitted $\kappa\approx0.80$ across tracks),
-modeling that fault onset correlates with contention onset when the
-regime is configured to couple them ($r{=}0.31$--$0.76$) but not
-under a matched uncoupled periodic schedule ($r\approx{-}0.12$--$0.01$).
-The decoupled baseline still uses $b_f$ for accuracy weighting, so
-the entire RQ-H delta is attributable to the coupling term alone. We
-additionally compare against a \textbf{threshold} rule
-($p_{\text{cont}}=\max(b_c,\mathbf{1}[b_f{>}0.5])$), a
-\textbf{memoryless} detector (no HMM, no persistence, for RQ-A1), an
-\textbf{Oracle Contention Router} (true contention state instead of
-$b_c$, bounding perfect compute-state knowledge), and a
-\textbf{Reactive-Latency} baseline (reacts only to observed latency,
-no sensor information at all).
+with $T_{\infty}(c)=T_{\mathrm{amb}}+R_{\mathrm{th}}P(c)$. THR drops $c$
+from consideration when $\hat T_H(c) \ge T_{\mathrm{hi}}-m$, using
+$H=50$ frames and a margin $m=2$\degc. C4 is always allowed, so some
+configuration is always available. Feasibility and accuracy selection
+then run as usual. Each frame costs four evaluations of
+Eq.~\eqref{eq:forecast}. With the belief update and selection included,
+we measured 7.3\,$\mu$s per frame in Python on one Apple M5 core, under
+0.004\% of one C1 inference.
+
+\textit{Joint + THR.} Camera faults sometimes come with extra compute
+load, for example when a degraded camera makes localization work
+harder. For that case THR can be combined with the noisy-OR coupling
+of \cite{roy2026beliefspace}, $p_{\mathrm{cont}} = 1-(1-b_c)(1-\kappa b_f)$,
+where $\kappa$ is fit on separate calibration draws.
+
+\textit{Baselines.} Static C1 and Static C4 always serve one
+configuration. Reactive looks at latency only and ignores the camera.
+Belief is the decoupled router of \cite{roy2026beliefspace} using our
+online $b_c$ and no temperature input. Joint adds the fault-coupling
+term to Belief. Matched budget is Belief with a running cap on the
+share of frames that use C1, set to the share THR used for the same
+seed and ambient temperature. It has the same heavy-model budget as THR
+and no temperature reading, which lets us check whether THR helps by
+choosing good moments for C1 or simply by using C1 less.
 
 % ---------------------------------------------------------------
 \section{Experimental Setup}
-\label{sec:experiments}
 
-We organize results around four questions: \textbf{RQ-H} (headline)
--- does coupling-aware routing reduce deadline-miss vs.\ a decoupled
-baseline, when coupling is enabled? \textbf{RQ-A1} -- does
-persistence improve fault detection and switching over a memoryless
-detector? \textbf{RQ-A2} -- does a model-derived dwell time match
-hand-tuning? \textbf{RQ-Coupling} -- does the coupling RQ-H is
-evaluated under actually occur in un-manipulated data, and does the
-benefit generalize across sequences?
+\textit{Traces.} We use seven real traces with the frontiers and fault
+labels profiled in \cite{roy2026beliefspace}. Two come from
+TartanDrive: the full trajectory, which has no camera faults and serves
+as a negative control, and a 309-frame stretch of rough terrain. Four
+come from RADIATE (rain, snow, fog, night). The last is WoodScape
+fisheye video with real soiling masks. We repeat each trace to fill a
+1200-frame mission (2 minutes at 10\,Hz) so the chip has time to reach
+thermal steady state.
 
-Table~\ref{tab:tracks} summarizes the four dataset tracks. Track A
-(TartanDrive) is used both as a fault-free negative control (full
-trajectory) and a high-degradation segment (309 contiguous
-rough-terrain frames). Track B (controlled injection: PSF blur,
-exposure crush, alpha-composited occluders on real TartanDrive
-frames) validates belief-tracker accuracy against known onsets and
-drives the RQ-A2 arrival experiment; no headline number depends on
-it. Track C (WoodScape) uses real soiling-mask ground truth for
-occlusion, not an optical-flow proxy. Track D (RADIATE) spans four
-weather conditions with widely varying fault fraction and coupling
-strength, letting us test whether the benefit tracks frequency,
-correlation, or severity. A matched \emph{uncoupled} periodic
-contention schedule is the falsification control for every condition
-where coupling is enabled.
+\textit{Experiments.} E1 re-scores the original fault-coupled contention
+schedule of \cite{roy2026beliefspace} for bursts of consecutive misses.
+E2 has thermal contention only, at ambient temperatures of 20 to
+55\degc{} in steps of 5. E3 adds the fault-coupled schedule on top of
+thermal throttling. In E4, THR is given a wrong $R_{\mathrm{th}}$ or
+$\tau$ while the plant keeps the true values.
 
-\begin{table}[htbp]
-\caption{Dataset tracks. $r$ is the fault--contention correlation
-when the coupled regime is enabled (experimentally imposed; see
-\S\ref{sec:rqcoupling}).}
-\label{tab:tracks}
-\centering
-\footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{llccc}
-\toprule
-\textbf{Track} & \textbf{Condition} & \textbf{Frames} & \textbf{Fault\%} & \textbf{$r$} \\
-\midrule
-A & off-road (full / seg.) & 1198 / 309 & 0.0 / 30.4 & -- / 0.74 \\
-C & WoodScape soiling      & 3303       & 8.1        & 0.56 \\
-D & RADIATE rain           & 2651       & 44.4       & 0.76 \\
-D & RADIATE snow           & 2589       & 18.5       & 0.69 \\
-D & RADIATE fog            & 2659       & 1.9        & 0.31 \\
-D & RADIATE night          & 2644       & 12.7       & 0.68 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-All experiments run on an Apple~M5 (Metal/MPS, fp32; the precision
-axis is CUDA-only and not reported). The deadline self-calibrates per
-device (median C1 nominal latency, $211$--$341$\,ms here), so the
-deadline-miss \emph{comparison} is device-agnostic; absolute
-latencies are not headline numbers. All comparisons use 5 seeds
-(95\% $t$-interval, paired difference tests); the real frames are
-identical across seeds, so seed variance reflects sensor-measurement
-noise only. \textbf{On ``significant'':} unless stated, it means the
-95\% CI over these 5 seed draws excludes zero -- noise sensitivity on
-one fixed trajectory. Other resampling units are named explicitly:
-``temporal resampling'' block-bootstraps WITHIN one trace; ``cluster
-resampling'' resamples INDEPENDENT SEQUENCES ($n{=}3$ per condition,
-\S\ref{sec:rqcoupling}), the only unit that speaks to cross-trajectory
-generalization -- reported as ``directionally consistent,'' not
-generalizing, since its interval includes zero. Repeated tests across
-sequences and proxies (\S\ref{sec:rqcoupling}d) use paired $p$-values
-computed directly from seed-level differences with
-Benjamini--Hochberg correction.
+\textit{Protocol.} We follow the validation-locked protocol of
+\cite{zhou2026matchedinput}. Every tunable (plant parameters, $H$, $m$,
+dwell, the 1.5$\times$ slow threshold) was set in code before the first
+evaluation run, and none was changed after seeing results. Each result
+file records \texttt{eval\_labels\_used\_for\_selection: false}. All
+comparisons use five seeds, which change the latency draws, the camera
+measurement noise and the temperature-sensor noise on the same real
+frames. We report 95\% $t$-intervals on paired per-seed differences
+and mark with $^\ast$ any interval that excludes zero.
 
 % ---------------------------------------------------------------
 \section{Results}
 \label{sec:results}
 
-\subsection{RQ-H: Joint vs.\ Decoupled (Headline)}
-
-Table~\ref{tab:rqh} and Fig.~\ref{fig:summary} give the main result.
-The joint policy reduces deadline-miss rate in every condition with
-real faults, significantly in five of six; snow is positive but
-under-powered. The two uses of Track A bracket the mechanism: the
-full fault-free trajectory yields exactly $0.0$\,pp, while its
-high-degradation segment yields $+3.0$\,pp at near-matched accuracy.
-\emph{Every} uncoupled control is exactly $0.0$\,pp: within the
-evaluated schedules, the benefit appears only when the
-experimentally-imposed coupling is enabled -- a deadline-miss result
-that does not depend on the pseudo-GT accuracy metric at all. The effect does \emph{not} track
-fault frequency or correlation strength -- fog has the lowest fault
-fraction ($1.9\%$) and weakest coupling ($r{=}0.31$) yet the largest
-benefit ($+9.4$\,pp), because rare but severe fog episodes make the
-reference config infeasible exactly when contention strikes. On fog
-the joint policy shows a lower pseudo-GT accuracy ($0.861$ vs.\ $0.954$)
-alongside its miss reduction; because pseudo-GT does not track real
-annotations (\S\ref{sec:rqcoupling}e), we report this as an
-internal-consistency observation only and do \emph{not} claim a supported
-accuracy--timeliness operating point. A combined on-time-utility metric
-$U$ (accuracy if on-time, else zero, averaged over all frames) is
-nonnegative throughout (significantly higher for off-road, rain, night;
-fog break-even, $+0.07$\,pp), but inherits the same pseudo-GT caveat.
-\textbf{Unlike the deadline-miss result, $U$ and all accuracy numbers
-are computed against pseudo-GT and are internal-consistency results
-only} -- \S\ref{sec:rqcoupling}e shows the pseudo-GT config ranking
-does not match real annotations.
-
-\begin{table*}[htbp]
-\caption{RQ-H. Deadline-miss rate, joint vs.\ decoupled, coupled
-regime. $\Delta=$ miss-rate reduction (decoupled$-$joint), pp, 95\%
-CI; $^\ast$ excludes zero. Every uncoupled control yields $0.0$\,pp.
-This table does not depend on pseudo-GT.}
-\label{tab:rqh}
+\begin{figure*}[t]
 \centering
-\small
-\setlength{\tabcolsep}{5pt}
-\begin{tabular}{llcccccc}
+\includegraphics[width=\textwidth]{fig_heat_sweep.pdf}
+\caption{Ambient sweep (E2). Lines are the mean over seven traces and
+bands span the lowest and highest trace. Left: deadline-miss rate.
+Middle: share of the mission spent throttled. Right: longest blackout
+in seconds, log scale. THR (red) never throttles. Matched budget
+(purple) has the same miss rate as THR but still throttles at 50 and
+55\degc.}
+\label{fig:sweep}
+\end{figure*}
+
+\subsection{Cool air}
+From 20 to 35\degc{} no policy ever brings the chip to $T_{\mathrm{hi}}$.
+THR, Belief, Reactive and Matched budget make the same choice on every
+frame, and their miss rates differ by exactly 0.0 percentage points on
+all seven traces (Fig.~\ref{fig:sweep}). THR only acts differently when
+its forecast says the chip will cross the threshold. At 40\degc{} it
+starts holding C1 back a little early: C1 serves about 93\% of frames
+and pseudo-GT agreement stays between 0.97 and 1.00.
+
+\subsection{Hot air}
+Table~\ref{tab:eff} lists miss rate, throttling, blackout length,
+power, energy and accuracy for each policy. Static C1 does badly. At
+45\degc{} it is throttled 20\% of the time and has a 12.5\,s blackout
+on every trace. At 55\degc{} it is throttled 76\% of the time, its
+longest blackout is 91\,s, and it misses 88\% of deadlines.
+
+Belief and Reactive keep the longest blackout near 1\,s, but they are
+still throttled for 11 to 13\% of the mission at 45\degc{} and 32 to
+39\% at 55\degc. Fig.~\ref{fig:trace} shows why. They respond to the
+slowdown after the governor has already stepped in.
+
+THR was never throttled on any trace, seed or temperature. Compared
+with Belief it lowers the miss rate by 3.9 to 5.5 percentage points at
+45\degc{} and by 6.5 to 7.4 at 55\degc, and every one of those
+fourteen differences is significant (Table~\ref{tab:heat}). Energy per
+on-time frame falls by 11\% at 45\degc{} (3.61 against 4.08\,J) and by
+13\% at 55\degc{} (2.30 against 2.65\,J). THR pays for this with
+accuracy, since it serves C1 less often: mean pseudo-GT agreement at
+45\degc{} goes from 0.975 to 0.949. On-time utility, which scores a
+frame by its accuracy if it is on time and zero otherwise, still rises
+significantly on rain, snow, fog and night at 45\degc{} (by 2.1 to 4.4
+points) and does not change on the other three traces. Static C4 beats
+every policy on timing and energy, with agreement of only 0.695. THR
+sits between the two static policies on the accuracy-timeliness
+trade-off.
+
+\begin{table}[t]
+\caption{Efficiency, quality and cost in E2, averaged over 7 traces.
+Miss and Thr.\ (throttled) in \%. Blackout is the longest run of
+consecutive misses in seconds. $P$ is mean SoC power (W) and
+$E_{\mathrm{ot}}$ is energy per on-time frame (J). Acc.\ is pseudo-GT
+agreement (internal consistency only).}
+\label{tab:eff}
+\centering\footnotesize
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{@{}lcccccc@{}}
 \toprule
-\textbf{Track} & \textbf{Condition} & \textbf{$\kappa$} &
-\textbf{Joint miss} & \textbf{Decoup.\ miss} &
-\textbf{$\Delta$ (pp)} & \textbf{Uncoupled $\Delta$} \\
+Policy & Miss & Thr. & Blackout & $P$ & $E_{\mathrm{ot}}$ & Acc. \\
 \midrule
-A & TartanDrive (full, clean)   & --   & --    & --    & $0.00$ & $0.00$ \\
-A & TartanDrive (off-road seg.) & 0.79 & 0.249 & 0.279 & $+3.00\ [2.49,\,3.51]^\ast$ & $0.00$ \\
-D & RADIATE rain                & 0.80 & 0.233 & 0.244 & $+1.13\ [0.18,\,2.09]^\ast$  & $0.00$ \\
-D & RADIATE snow                & 0.82 & 0.313 & 0.341 & $+2.80\ [-0.58,\,6.18]$      & $0.00$ \\
-D & RADIATE fog                 & 0.80 & 0.329 & 0.423 & $+9.40\ [7.07,\,11.73]^\ast$ & $0.00$ \\
-D & RADIATE night               & 0.80 & 0.313 & 0.371 & $+5.87\ [2.87,\,8.86]^\ast$  & $0.00$ \\
-C & WoodScape soiling           & 0.80 & 0.256 & 0.271 & $+1.56\ [1.01,\,2.11]^\ast$  & $0.00$ \\
+\tabinput{tables/tab_efficiency.tex}
 \bottomrule
 \end{tabular}
-\end{table*}
-
-\subsection{Is the Coupling Mechanism Robust?}
-
-A \textbf{threshold rule} ($p_{\text{cont}}=\max(b_c,\mathbf{1}[b_f{>}0.5])$)
-performs statistically indistinguishably from the noisy-OR on every
-condition ($\pm0.5$\,pp, all CIs include zero), stable across
-observation-noise levels up to $\sigma{=}0.75$: the contribution is
-coupling sensor belief into contention anticipation, not the fusion
-\emph{form}. A small MLP router on the same belief features is
-competitive but inconsistent (better on three tracks, worse on four),
-again pointing to the coupled features rather than the routing
-function as the source of the gain.
-
-An \textbf{Oracle Contention Router} (true contention state, not
-belief) is statistically indistinguishable from, or in several
-conditions numerically worse than, the joint policy -- not because
-belief beats ground truth, but because feasibility is defined at the
-median-latency threshold ($P(\text{meet}){\ge}0.5$), which perfect
-state knowledge does not by itself tighten; little residual miss rate
-is recoverable by a better contention estimator under this rule. A
-\textbf{Reactive-Latency} baseline (no sensor information at all)
-achieves a lower miss rate in several conditions but at an accuracy
-cost (pseudo-GT): the combined utility $U$ is lower than Joint's in
-five of seven conditions (significantly on full off-road and fog) --
-miss rate alone favors the naive baseline exactly where it sacrifices
-the accuracy coupling is meant to protect. Router overhead (HMM
-filtering, fusion, selection, on CPU) is negligible:
-$19$--$32\,\mu$s/frame batch-fit upper bound ($\le0.015\%$ of
-reference latency), $0.1$--$1.2\,\mu$s/frame steady-state.
-
-A moving-block bootstrap ($B{=}2000$) confirms the deltas are not
-driven by a handful of frames (all six conditions exclude zero under
-temporal resampling). A deadline sweep ($0.7$--$1.5\times$ the self-calibrated value) on all
-ten sequences shows the benefit is confined to the borderline-feasibility
-band at the median-C1 deadline: at $1.1\times$ it retains only
-$0.07$--$0.84$ of its $1.0\times$ magnitude (fog collapses hardest,
-$9.4{\to}0.7$\,pp; the off-road segment is most robust at $0.84$), and
-below $0.9\times$ all policies meet the deadline so every delta vanishes.
-We therefore scope RQ-H to this tight-deadline regime -- the operating
-point the median-C1 rule targets -- not to general deadlines; across the
-same sweep neither the oracle nor the belief router dominates the reactive
-baseline on miss rate. Sweeping $\kappa$ gives a monotonic response from
-$0.0$\,pp at $\kappa{=}0$ to $+10.9$\,pp at $\kappa{=}1$
-(Fig.~\ref{fig:phase}: exactly zero at $\kappa{=}0$ on all seven
-tracks). A denser nine-config frontier leaves the fog result intact
-($+6.0$ vs.\ $+9.4$\,pp; smaller because the richer frontier gives
-the decoupled baseline better fallbacks).
+\end{table}
 
 \begin{figure}[t]
-  \centering
-  \includegraphics[width=\columnwidth]{fig_phase_diagram.png}
-  \caption{RQ-H phase diagram (RADIATE fog): joint$-$decoupled
-  deadline-miss reduction over a coupling$\times$onset-rate grid of
-  controlled regimes. The $\kappa{=}0$ row is exactly zero (here and
-  on all seven tracks); benefit grows only with coupling and onset
-  rate -- the cleanest single statement of the mechanism.}
-  \label{fig:phase}
+\centering
+\includegraphics[width=\columnwidth]{fig_heat_trace.pdf}
+\caption{SoC temperature during one 2-minute mission at 45\degc{} (fog
+trace, seed 0). Static C1 and Belief go through repeated throttle
+cycles. THR alternates C1 and C2 and stays just below the release
+threshold.}
+\label{fig:trace}
 \end{figure}
 
-\subsection{RQ-A1/A2: Persistence and Dwell Time}
-
-The HMM belief detector improves fault-detection balanced accuracy
-(against independent onsets, not pseudo-GT) in every faulted track
-($+3$ to $+8$ points, Table~\ref{tab:rqa1}) and reduces
-config-switching significantly in three of five conditions (fog,
-night, soiling), meeting the full pre-specified criterion (lower
-switching at non-inferior accuracy) on night. It \emph{increases}
-switching only on rain, where fast droplet flicker is
-over-interpreted by HMM smoothing as sustained degradation -- a
-fault-type-dependent result, not a flat negative, arguing for a
-smoothing time-constant matched to the fault's temporal scale.
-
-\begin{table}[htbp]
-\caption{RQ-A1. Config-switching rate, belief vs.\ memoryless, and
-detection balanced accuracy (independent onsets). $\Delta=$
-memoryless$-$belief (positive = belief switches less); $^\ast$ CI
-excludes zero.}
-\label{tab:rqa1}
-\centering
-\footnotesize
+\begin{table*}[t]
+\caption{Heat regime (E2) per trace. Blackout C1 is Static C1's longest
+run of consecutive misses (s). Thr.\ is the \% of the mission spent
+throttled. $\Delta$ is the reduction in deadline-miss rate relative to
+Belief, in percentage points (positive means fewer misses). THR$-$MB
+compares THR with the matched-budget control. $^\ast$: the 95\% CI over
+5 seeds excludes zero.}
+\label{tab:heat}
+\centering\footnotesize
 \setlength{\tabcolsep}{3pt}
-\begin{tabular}{lccccc}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}l cccccc c cccccc@{}}
 \toprule
-\textbf{Track} & \textbf{Belief} & \textbf{Mem.} &
-\textbf{$\Delta$} & \textbf{bAcc$_{\text{bel}}$} & \textbf{bAcc$_{\text{mem}}$} \\
+& \multicolumn{6}{c}{Ambient 45\degc} && \multicolumn{6}{c}{Ambient 55\degc} \\
+\cmidrule{2-7}\cmidrule{9-14}
+Trace & Blackout C1 & Thr.\ Belief & Thr.\ THR & $\Delta$ THR & $\Delta$ MB & THR$-$MB &&
+Blackout C1 & Thr.\ Belief & Thr.\ THR & $\Delta$ THR & $\Delta$ MB & THR$-$MB \\
 \midrule
-D rain   & 0.020 & 0.010 & $-0.010^\ast$ & 0.884 & 0.854 \\
-D snow   & 0.043 & 0.031 & $-0.012$      & 0.859 & 0.821 \\
-D fog    & 0.037 & 0.047 & $+0.011^\ast$ & 0.752 & 0.668 \\
-D night  & 0.050 & 0.074 & $+0.024^\ast$ & 0.825 & 0.794 \\
-C soil   & 0.020 & 0.052 & $+0.031^\ast$ & 0.862 & 0.808 \\
+\tabinput{tables/tab_heat_wide.tex}
+\bottomrule
+\end{tabular}}
+\end{table*}
+
+\subsection{Matched budget}
+The matched-budget control uses C1 for the same share of frames as THR,
+but it picks those frames without knowing the temperature. Its miss
+rate is statistically indistinguishable from THR's on every trace at
+both temperatures. The gap is never more than 1.0 percentage point and
+no interval excludes zero (Table~\ref{tab:heat}). So most of THR's
+deadline gain comes from how much C1 it runs. Forecasting the right
+moments adds little on top. Part of the reason is the deadline rule.
+$D$ is C1's median latency, so C1 misses about half its frames even on
+a cool chip, and any policy that uses C1 less will miss less.
+
+The two policies do differ on throttling. At 55\degc{} the matched
+budget is still throttled on rain (4.5\% of the mission), fog (5.8\%)
+and soiling (15.6\%), and those paired differences are significant.
+THR is never throttled. The control also needed THR to tell it the
+budget in the first place. The right C1 share falls from about 0.93 at
+40\degc{} to between 0.48 and 0.56 at 55\degc, so a fixed cap tuned at
+one temperature would waste accuracy or throttle at another. For an
+efficiency-minded deployment, the forecast in THR works as a cheap way
+to estimate the heavy-model budget online. A duty cap that lands on
+the same budget by other means should do equally well on misses.
+
+\subsection{Heat combined with camera faults}
+E3 adds fault-coupled contention on top of throttling
+(Fig.~\ref{fig:compound}, Table~\ref{tab:compound}). The fault-coupling
+term and THR respond to different problems. On the fault-free
+trajectory the coupling term (Joint) gains exactly 0.0 points, and THR
+gains 5.3 points at 45\degc{} and 8.6 at 55\degc. At 25\degc{} THR adds
+nothing, and Joint\,+\,THR matches Joint exactly. At 45 and 55\degc,
+Joint\,+\,THR beats Belief on all seven traces, by 5.3 to 13.0 points
+and by 6.9 to 13.7 points, and it never falls below Joint alone. At
+55\degc{} Joint by itself is no longer significant on snow and soiling,
+while Joint\,+\,THR is (9.0 and 6.9 points).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_compound.pdf}
+\caption{Heat plus fault-coupled contention at 45\degc{} (E3). Bars show
+the reduction in deadline-miss rate relative to Belief, with 95\%
+CIs. Joint\,+\,THR is best or tied on every trace.}
+\label{fig:compound}
+\end{figure}
+
+\begin{table}[t]
+\caption{E3: reduction in miss rate relative to Belief (pp). J is
+Joint (fault coupling only); J+T is Joint\,+\,THR.}
+\label{tab:compound}
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+& \multicolumn{2}{c}{25\degc} & \multicolumn{2}{c}{45\degc} & \multicolumn{2}{c}{55\degc} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(l){6-7}
+Trace & J & J+T & J & J+T & J & J+T \\
+\midrule
+\tabinput{tables/tab_compound.tex}
 \bottomrule
 \end{tabular}
 \end{table}
 
-Under non-stationary fault arrival, model-derived hysteresis is
-$\approx\!4\times$ more responsive than fixed hysteresis
-(onset-to-reconfiguration lag $1.6$ vs.\ $6.6$ frames) but switches
-$\approx\!30\%$ more; under stationary arrival the two are
-indistinguishable, so the auto-tuned dwell matches hand-tuning
-without manual calibration.
+\subsection{Wrong thermal model}
+A real deployment would have to estimate $R_{\mathrm{th}}$ and $\tau$.
+In E4 (Table~\ref{tab:misspec}) we change the model THR believes in
+while leaving the plant alone, at 45\degc. Because THR forecasts from
+the measured temperature, no error we tried brought throttling back on
+any trace. The errors change how cautious THR is. If it thinks
+$R_{\mathrm{th}}$ is 30\% lower than it is, the miss-rate gain shrinks
+to 0.6 to 2.3 points (significant on 5 of 7 traces) and more accuracy
+is kept. Overestimating $R_{\mathrm{th}}$ or underestimating $\tau$
+gives larger miss reductions and lower accuracy. A rough model is
+enough to avoid throttling, and the value of $R_{\mathrm{th}}$ mostly
+decides where THR lands between accuracy and timeliness.
 
-\subsection{RQ-Coupling: Does the Coupling Occur Naturally, and Does the Benefit Generalize?}
-\label{sec:rqcoupling}
-
-RQ-H is evaluated under an \emph{experimentally-imposed}
-coupled/uncoupled schedule. We directly test whether that assumption
-holds in un-manipulated data on RADIATE, adding \texttt{rain\_2\_0},
-\texttt{rain\_3\_0}, \texttt{fog\_8\_0}, \texttt{fog\_8\_1} to the
-four committed sequences (8 total). Table~\ref{tab:coupling}
-summarizes five checks.
-
-\textbf{(a) Measured coupling.} For every sequence we record real
-per-frame latency and detection count (proxies independent of the
-fault signals) and re-run RQ-H with contention scheduled from the
-measured proxy instead of the fault label. Every correlation CI
-centers near zero or the wrong sign and the de-circularized reduction
-collapses to $\approx0.0$\,pp on all 8 sequences and both proxies:
-the imposed regime \emph{constructs} the coupled scenario; we do not
-find one already present in RADIATE by these proxies.
-
-\textbf{(b) Cross-sequence consistency.} For rain and fog (3
-independent sequences each) the per-sequence effect is positive in
-all six traces and the cluster bootstrap stays entirely positive, but
-the cross-sequence $t$-interval includes zero for both -- reported as
-\emph{directionally consistent across tested sequences}, not as
-generalizing.
-
-\textbf{(c) Cross-sequence transfer of the full belief model.}
-Fitting the \emph{entire} fault-belief estimator (the per-channel
-switching HMMs) \emph{and} $\kappa$ on one sequence and testing on a
-held-out one, the transferred detector still recovers faults
-(balanced accuracy $0.65$--$0.90$ vs.\ $0.73$--$0.95$ native) and the
-RQ-H reduction stays positive in all eight tested pairs and
-significant in five -- including cross-\emph{condition} transfers
-(rain$\rightarrow$fog $+7.8$\,pp, fog$\rightarrow$fog $+17.9$\,pp).
-The whole belief model, not merely the scalar $\kappa$, generalizes
-across trajectories, though the imposed-regime effect size can shrink
-under transfer (e.g.\ fog $9.4\rightarrow4.4$\,pp).
-
-\textbf{(d) A genuinely independent workload, multiple-testing
-corrected.} Parts (a),(d) together run 24 tests (8 sequences
-$\times$ 3 proxies: detections, latency, and a real, CPU-bound,
-entirely separate ORB keypoint-matching workload independent of the
-detector). We computed paired two-sided $p$-values directly from the
-five seed-level differences of each test and applied
-Benjamini--Hochberg across all 24 at $q{=}0.05$; the tests are not
-fully independent (proxies share frames within a sequence, sequences
-share a condition), a positive-dependence structure under which BH
-still controls the false-discovery rate. A first run produced one
-nominally positive result (\texttt{rain\_2\_0}, ORB proxy:
-$+2.73$\,pp, $p{\approx}0.0024$), which narrowly missed its rank-1 BH
-threshold ($0.05/24{\approx}0.0021$). Because the ORB proxy is timed
-in real wall-clock and thus varies run to run, we then
-\emph{re-measured} it: on replication the effect vanished entirely
-($+0.00$\,pp, $p{=}1$; $P_c(\text{fault}){=}0.211 <
-P_c(\text{nominal}){=}0.256$). After correction and replication,
-\textbf{zero of 24 tests support naturally-occurring coupling}; the
-one nominal positive was a measurement-timing artifact, exactly the
-outcome multiple-testing discipline exists to catch.
-
-\textbf{(e) Real annotations vs.\ pseudo-GT.} We projected RADIATE's
-real radar-derived object annotations onto the camera image
-(replicating the RADIATE SDK's radar-to-camera projection) and
-computed real, class-agnostic detection F1 for all four configs on
-RADIATE rain (500 frames). Real-GT F1 is far lower and flatter across
-configs ($0.19$--$0.22$) than pseudo-GT F1 ($0.73$--$1.00$), the
-config ranking does not match, and per-frame correlation between the
-two is weak and sign-mixed. Coarser radar-projected boxes explain
-part of the absolute gap, but the ranking mismatch means pseudo-GT is
-an internal consistency check, not a validated accuracy proxy --
-every accuracy and utility number inherits that limitation, while the
-RQ-H deadline-miss numbers (Table~\ref{tab:rqh}) do not.
-
-\begin{table}[htbp]
-\caption{RQ-Coupling summary (RADIATE, 8 sequences). ``Result''
-reports the honest, multiple-testing-aware outcome of each check.}
-\label{tab:coupling}
-\centering
-\scriptsize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{p{2.3cm}p{3.7cm}}
+\begin{table}[t]
+\caption{THR with a wrong thermal model at 45\degc{} (E4): range of the
+miss-rate reduction relative to Belief over 7 traces, number of traces
+with a significant reduction, accuracy range, and the largest throttled
+share.}
+\label{tab:misspec}
+\centering\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-\textbf{Check} & \textbf{Result} \\
+THR's model & $\Delta$ miss (pp) & Sig. & Acc. & Max thr.\ (\%) \\
 \midrule
-(a) Real coupling & Null: de-circ.\ $\Delta\approx0.0$\,pp vs.\ imposed $1.1$--$9.4$\,pp \\
-(b) Cross-seq.\ consistency & Positive all 6 traces; $t$-CI incl.\ 0 at $n{=}3$ (not generalization) \\
-(c) Full-model transfer & HMM+$\kappa$ trained on another sequence: sig.\ in 5/8 pairs, cross-condition too \\
-(d) Independent workload (BH-corrected) & Null in 24/24 after correction; the one nominal positive failed replication \\
-(e) Real-GT accuracy & Ranking mismatch; pseudo-GT is an internal check only \\
+\tabinput{tables/tab_misspec.tex}
 \bottomrule
 \end{tabular}
 \end{table}
 
-Taken together: the joint policy produces nonnegative deadline-miss
-reductions in all tested imposed-coupling conditions and the belief
-model (HMM and $\kappa$) transfers across sequences, but after
-correction and replication we
-find \emph{no} confirmed case of naturally-occurring coupling in
-un-manipulated RADIATE data. RQ-H is a proof of mechanism under a
-controlled, experimentally-imposed regime -- not evidence that such
-coupling, or the accuracy differences it is scored against, arise
-naturally in the field.
+\subsection{Bursts of misses under fault-coupled contention}
+A field robot cares about how long it goes without a usable detection,
+and the average miss rate hides that. We re-scored the original
+fault-coupled schedule of \cite{roy2026beliefspace} (E1,
+Table~\ref{tab:bursts}). Fault coupling lowers the share of frames that
+fall inside bursts of three or more misses (0.3\,s) on 4 of 7 traces:
+by 2.7 points on the off-road stretch, 6.3 on fog, 3.3 on night and 1.0
+on soiling. It is exactly zero on the clean trajectory. On no trace
+does it significantly shorten the longest blackout. Coupling makes
+bursts less frequent, but the worst case stays about where it was.
+
+\begin{table}[t]
+\caption{Bursts under fault-coupled contention (E1). Burst share is the
+\% of frames inside runs of at least 3 misses. Max run is in frames.}
+\label{tab:bursts}
+\centering\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+& \multicolumn{2}{c}{Burst share (\%)} & & \multicolumn{2}{c}{Max run} \\
+\cmidrule(lr){2-3}\cmidrule(l){5-6}
+Trace & Belief & Joint & $\Delta$ (pp) & Belief & Joint \\
+\midrule
+\tabinput{tables/tab_bursts.tex}
+\bottomrule
+\end{tabular}
+\end{table}
 
 % ---------------------------------------------------------------
-\section{Discussion}
-\label{sec:discussion}
+\section{Discussion and Limitations}
 
-The credibility of RQ-H rests on triangulation -- positive across
-three datasets, two camera geometries, and multiple degradation
-physics; exactly zero in every uncoupled control; harmless on the
-fault-free trajectory -- isolating coupling as the driver rather than
-an estimator or metric artifact. The benefit tracks fault
-\emph{severity} (deadline-bindingness) more than frequency or
-correlation, an interpretation inferred from condition-level outcomes
-rather than a directly measured variable. Since the threshold rule
-matches the noisy-OR, the supported claim is that \emph{using fault
-belief to anticipate contention} helps -- not that the particular
-noisy-OR belief-fusion algorithm is itself the advance.
+In a closed-loop simulation built on real camera traces and real
+profiled latencies, a closed-form thermal forecast kept the chip out of
+throttling at a cost of microseconds per frame. It lowered deadline
+misses and energy per on-time frame in hot air, changed nothing below
+40\degc, and worked alongside fault-aware routing. The matched-budget result limits what we can claim. A duty cap
+with no temperature input does as well on misses once it has the same
+budget, so the finding is about budgeting heavy inference. We have not
+shown that THR's choice of when to run C1 matters on its own.
 
-\textbf{What the paper does and does not establish.} It establishes,
-positively, (i) a real and portable mechanism -- where coupling exists,
-a router that exploits it beats one that cannot by $1.1$--$9.4$\,pp, the
-full belief model transfers across sequences and even weather
-conditions, at negligible cost, with a falsification control at exactly
-zero -- and (ii) a reusable, released evaluation pipeline
-(imposed-schedule substrate, de-circularization, independent-workload
-probe, multiple-testing protocol). What it does \emph{not} establish is
-that the coupling premise holds in un-manipulated data: zero of 24
-corrected tests show natural coupling, which we report plainly and equip
-any deployment to test on its own traces before adopting the method.
+The simulation has clear gaps. The plant is one RC node with typical
+parameters that we did not measure. Throttling reuses the profiled
+contended latency distribution instead of real DVFS states. Latencies
+were measured on an Apple M5 GPU, not an embedded module. Traces are
+repeated to reach mission length. Accuracy is agreement with the
+largest model, which tracks real annotations poorly
+\cite{roy2026beliefspace}, so accuracy and utility numbers only show
+internal consistency. Seeds change noise on fixed frames and do not
+stand in for independent missions.
 
-\textbf{Limitations.} The evaluation is offline and trace-driven,
-with a two-state, non-thermal contention model, evaluated only on an
-Apple M5 -- not a shared embedded perception/planning/control stack.
-Pseudo-GT is blind to systematic C1 error and only weakly validated
-against real annotations (part e); every accuracy- or utility-based
-conclusion should be read with that caveat, whereas the deadline-miss
-conclusions (Table~\ref{tab:rqh}) do not depend on it. Moreover,
-because pseudo-GT influences configuration ranking inside the
-router's max-expected-accuracy objective, the deadline-miss result
-establishes the timing mechanism but does not establish that the
-selected configurations are optimal under real task accuracy.
-The five seeds vary only injected measurement noise on identical real
-frames, so seed CIs measure noise sensitivity, not cross-sequence
-generalization -- which we separately bootstrap over 3 independent
-trajectories per condition (directionally consistent across tested
-sequences, not yet $t$-significant). RADIATE frames are rectified
-left-camera only; WoodScape's temporal axis is dataset order, not
-continuous video. Absolute latencies are dev-environment (Apple M5/MPS) driven by a
-synthetic competitor, so the study does not yet exercise real silicon,
-energy, or thermal contention as an HPEC evaluation ideally would. To
-make that gap directly closable rather than aspirational, we release a
-turnkey Jetson harness (\texttt{jetson\_harness.py}: real per-frame
-latency, throughput, \texttt{tegrastats} energy per frame, a measured
-co-running GPU competitor, and a sustained-load throttle check), so a
-single real-silicon condition can be added without changing the
-frontier or the routing code.
-
-\textbf{Future work.} A factorial/cross-coupled HMM would upgrade
-coupled-belief fusion to true joint belief-state estimation. Most
-importantly: more independent sequences and repeated
-\texttt{rain\_2\_0} trials to power the corrected real-coupling test;
-real embedded contention on a Jetson to test for coupling on hardware
-where it may plausibly arise; a full re-profiling of RQ-H on real
-RADIATE annotations; and a closed-loop downstream-task evaluation
-measuring task success rather than detector agreement.
+Next, we plan to measure $R_{\mathrm{th}}$, $\tau$ and throttle
+behaviour on a Jetson Orin inside an environmental chamber from 25 to
+55\degc{} using the \texttt{tegrastats} harness, and to score the
+routers against real annotations. We would also like to learn the duty
+budget directly from temperature logs, which would remove the need for
+an RC model.
 
 % ---------------------------------------------------------------
 \section{Conclusion}
-\label{sec:conclusion}
 
-We presented a belief-space perception router coupling sensor-fault
-and compute-contention HMM beliefs via a noisy-OR term, reducing
-deadline-miss rate by $1.1$--$9.4$\,pp when experimentally-imposed
-coupling is enabled (significant in five of six conditions), while
-every uncoupled control and the fault-free trajectory are exactly
-zero -- a result that does not depend on pseudo-ground-truth
-accuracy. Five further checks stress-test rather than assume the
-coupling regime: after Benjamini--Hochberg correction and a
-replication run, zero of 24 tests support naturally-occurring
-coupling in 8 real sequences; the full belief model (HMM and
-$\kappa$) nonetheless transfers across sequences, keeping the benefit
-significant in five of eight held-out pairs including cross-condition
-ones; and the pseudo-GT accuracy axis is an internal
-consistency check only, so the timing mechanism is established but
-config optimality under real task accuracy is not. The result is a portable, near-zero-cost coupling
-mechanism with clean falsification controls and a reproducible
-pipeline -- and one clearly scoped open question, whether the coupling
-arises naturally, that the same pipeline lets any deployment answer on
-its own traces.
+On a hot robot, choosing a heavy model now can cause throttling a
+minute later. THR gives the router a closed-form temperature forecast
+that costs microseconds per frame. Across seven real camera traces at
+45 and 55\degc{} the chip never throttled under THR. Deadline misses
+dropped by 3.9 to 7.4 percentage points and energy per on-time frame by
+11 to 13\%, while cool-weather behaviour stayed the same. The
+matched-budget control shows that the share of heavy-model frames is
+what drives the miss-rate gain. Teams building perception for hot
+hardware should estimate that share online from temperature instead of
+fixing it ahead of time.
 
-% ---------------------------------------------------------------
+\section*{Acknowledgment}
+This work builds on the code and traces of belief-space perception
+routing \cite{roy2026beliefspace}. We thank Vihan Aggarwal and Davin
+Yin for that work.
+
 \bibliographystyle{IEEEtran}
 \bibliography{references}
+
 \end{document}

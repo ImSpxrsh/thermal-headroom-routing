@@ -204,3 +204,17 @@ routing:
 
 logging:
   level: INFO
+
+# --- Extreme-environment extension (SWRS 2026; src/thermal.py, src/run_extreme_env.py) ---
+# Lumped RC thermal model of the perception SoC. ILLUSTRATIVE Jetson-Orin-class values,
+# not measured; replace with jetson_harness.py measurements (tegrastats temp + power).
+thermal:
+  model:
+    dt_s: 0.1
+    tau_s: 30.0
+    r_th: 2.0
+    p_idle_w: 5.0
+    p_max_w: 25.0
+    t_hi: 90.0
+    t_lo: 85.0
+    throttle_power_scale: 0.6
