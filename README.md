@@ -3,7 +3,9 @@
 Code, data and paper for *Thermal-Headroom Routing for Efficient Robot Perception in Extreme Heat*.
 
 Authors: Sparsh Roy (MIT and Hopewell Valley Central HS, corresponding author, sparshr@mit.edu),
-Arhaan Shah (Paradise Valley HS), Kevin Zhou (Hopewell Valley Central HS), and three more Paradise Valley HS authors to be added.
+Kevin Zhou (Hopewell Valley Central HS), Arhaan Shah (Paradise Valley HS), Shreyan Garg (Paradise Valley HS),
+Vihaan Joshi-Apte (Paradise Valley HS), Maxim Kudryashov (Hopewell Valley Central HS) and
+Nanda Cheruvanthala (Paradise Valley HS).
 
 We are submitting this to the 1st Data and Model Efficiency for Scalable AI Workshop (Efficient AI)
 at IEEE BigData 2026 in Phoenix. The PDF is [`paper/paper.pdf`](paper/paper.pdf) and the source is
