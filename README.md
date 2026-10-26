@@ -78,9 +78,7 @@ The model frontier, the camera-fault belief estimators, the dataset tracks (Tart
 WoodScape) and the cached per-frame outputs come from *Belief-Space Perception Routing* by Roy,
 Aggarwal and Yin ([arXiv:2608.00322](https://arxiv.org/abs/2608.00322)). This repository started as
 a copy of that codebase, which is the `init` commit. The original README, paper and run guides are
-in [`docs/bspr-substrate/`](docs/bspr-substrate/), including instructions for regenerating the cached
-outputs from raw data on Colab, a Mac or Windows. The validation-locked protocol and the
-matched-budget control follow Zhou and Roy ([arXiv:2609.23924](https://arxiv.org/abs/2609.23924)).
+in [`docs/bspr-substrate/`](docs/bspr-substrate/), 
 
 ## License
 
