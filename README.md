@@ -9,6 +9,8 @@ We are submitting this to the 1st Data and Model Efficiency for Scalable AI Work
 at IEEE BigData 2026 in Phoenix. The PDF is [`paper/paper.pdf`](paper/paper.pdf) and the source is
 [`paper/paper.tex`](paper/paper.tex).
 
+The project page is [`index.html`](index.html), a single static file. With GitHub Pages turned on for `main` (root folder), it is served at https://imspxrsh.github.io/thermal-headroom-routing/.
+
 ## What this is about
 
 Put a Jetson-class board in a sealed box on a robot in the Arizona desert and run the biggest

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THR · Thermal-Headroom Routing</title>
+<meta name="description" content="Thermal-Headroom Routing keeps a robot's perception chip out of thermal throttling in extreme heat by forecasting its temperature before choosing a detector. Submitted to the Efficient AI Workshop at IEEE BigData 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0e0c0b; --ink2:#17130f; --panel:#15110e;
+  --line:rgba(236,224,207,.10); --line2:rgba(236,224,207,.18);
+  --text:#ece0cf; --dim:#a89d8d; --faint:#6f665a;
+  --heat:#ff7a3d; --heat-soft:rgba(255,122,61,.13);
+  --amber:#f0b040; --amber-soft:rgba(240,176,64,.13);
+  --cool:#5bb8d6; --cool-soft:rgba(91,184,214,.12);
+  --green:#8fcf7a; --green-soft:rgba(143,207,122,.12);
+  --rose:#e8836b;
+  --serif:'Fraunces',Georgia,serif; --body:'Hanken Grotesk',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--text);font-family:var(--body);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--heat);color:var(--ink)}
+a{color:inherit}
+.bg{position:fixed;inset:0;z-index:-2;pointer-events:none}
+.bg .grid{position:absolute;inset:0;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:64px 64px;mask-image:radial-gradient(ellipse 90% 70% at 50% 30%,#000 30%,transparent 80%);opacity:.5}
+.blob{position:fixed;border-radius:50%;filter:blur(90px);z-index:-1;opacity:.3;pointer-events:none}
+.blob.a{width:520px;height:520px;background:radial-gradient(circle,rgba(255,122,61,.5),transparent 70%);top:-160px;left:-60px}
+.blob.b{width:460px;height:460px;background:radial-gradient(circle,rgba(91,184,214,.35),transparent 70%);top:34%;right:-140px}
+
+.wrap{max-width:1100px;margin:0 auto;padding-left:28px;padding-right:28px}
+section{position:relative}
+section.wrap{padding-top:clamp(110px,14vh,170px);padding-bottom:clamp(110px,14vh,170px)}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--heat);display:inline-flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:26px;height:1px;background:var(--heat);display:inline-block;opacity:.7}
+h1,h2,h3{font-family:var(--serif);font-weight:500;line-height:1.08;letter-spacing:-.01em}
+h2{font-size:clamp(30px,4.5vw,50px);margin:18px 0 20px}
+h2 em{font-style:italic;color:var(--heat)}
+p.lead{font-size:clamp(17px,1.6vw,19px);color:var(--dim);max-width:62ch}
+.mono{font-family:var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--ink2);border:1px solid var(--line);border-radius:5px;padding:.08em .4em}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none;transition:none}
+  *{animation:none!important;transition:none!important}
+}
+
+/* HERO */
+.hero{min-height:92vh;display:flex;flex-direction:column;justify-content:center;padding-top:84px;padding-bottom:96px}
+.tag{font-family:var(--mono);font-size:12.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
+.hero h1{font-size:clamp(70px,14vw,170px);line-height:.92;margin:20px 0 6px;letter-spacing:-.02em}
+.hero h1 .light{color:var(--text)} .hero h1 .glow{color:var(--heat);text-shadow:0 0 50px rgba(255,122,61,.35)}
+.hero .expand{font-family:var(--serif);font-style:italic;font-size:clamp(19px,2.3vw,28px);color:var(--dim);margin-bottom:26px}
+.thesis{font-family:var(--serif);font-size:clamp(21px,2.8vw,32px);line-height:1.3;max-width:25em;margin-bottom:26px}
+.thesis .h{color:var(--heat)} .thesis .c{color:var(--cool)} .thesis .g{color:var(--green)}
+.hero .sub{font-size:17.5px;color:var(--dim);max-width:60ch;margin-bottom:30px}
+.hero .sub b{color:var(--text);font-weight:600}
+.venue{display:flex;gap:16px;align-items:flex-start;background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--heat);border-radius:12px;padding:18px 22px;max-width:680px;margin-bottom:32px}
+.venue .k{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--heat);white-space:nowrap;padding-top:3px}
+.venue p{font-size:15px;color:var(--dim)}
+.venue p b{color:var(--text);font-weight:600}
+.pillrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:38px}
+.pill{font-family:var(--mono);font-size:12.5px;padding:8px 14px;border:1px solid var(--line2);border-radius:999px;color:var(--dim);display:inline-flex;align-items:center;gap:8px}
+.pill .dot{width:7px;height:7px;border-radius:50%}
+.pill.p-h .dot{background:var(--heat)} .pill.p-c .dot{background:var(--cool)} .pill.p-g .dot{background:var(--green)}
+.cta{display:flex;gap:14px;flex-wrap:wrap}
+.btn{font-family:var(--mono);font-size:13.5px;letter-spacing:.04em;text-decoration:none;padding:12px 20px;border-radius:8px;border:1px solid var(--line2);color:var(--text);transition:border-color .2s,background .2s}
+.btn:hover,.btn:focus-visible{border-color:var(--heat);background:var(--heat-soft)}
+.btn.primary{background:var(--heat);color:var(--ink);border-color:var(--heat);font-weight:700}
+.btn.primary:hover,.btn.primary:focus-visible{background:#ff9a66}
+:focus-visible{outline:2px solid var(--heat);outline-offset:3px;border-radius:4px}
+
+/* contrast panel */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:44px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px}
+.card h3{font-size:21px;margin-bottom:10px}
+.card p{color:var(--dim);font-size:15.5px}
+.card .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;display:block;margin-bottom:14px}
+.card.react .k{color:var(--cool)}
+.card.ahead .k{color:var(--heat)}
+.card .verdict{margin-top:16px;font-family:var(--mono);font-size:13px;padding:9px 12px;border-radius:8px}
+.card.react .verdict{background:var(--cool-soft);color:var(--cool)}
+.card.ahead .verdict{background:var(--heat-soft);color:var(--heat)}
+
+/* evidence ledger */
+.ledger{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:44px}
+.ev{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px 24px}
+.ev .what{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+.ev .num{font-family:var(--serif);font-size:clamp(20px,2.2vw,26px);line-height:1.25;margin-bottom:8px}
+.ev.pos .num{color:var(--green)} .ev.neg .num{color:var(--rose)} .ev.neu .num{color:var(--amber)}
+.ev p{color:var(--dim);font-size:14.5px}
+.ledger-note{margin-top:22px;font-size:15px;color:var(--dim);max-width:66ch}
+.ledger-note b{color:var(--text)}
+
+/* demo */
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:30px;margin-top:44px}
+.stage svg{width:100%;height:auto;display:block}
+.stagebar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:18px;flex-wrap:wrap}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--dim)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.controls{display:flex;gap:10px;flex-wrap:wrap}
+.replay{font-family:var(--mono);font-size:12.5px;background:none;border:1px solid var(--line2);color:var(--dim);border-radius:8px;padding:8px 14px;cursor:pointer;transition:border-color .2s,color .2s}
+.replay:hover,.replay:focus-visible{border-color:var(--heat);color:var(--heat)}
+.replay[aria-pressed="true"]{border-color:var(--faint);color:var(--text)}
+.stepline{font-family:var(--mono);font-size:12.5px;color:var(--faint);margin-top:10px;min-height:1.4em}
+.stepline b{font-weight:700}
+.stepline .s1{color:var(--cool)} .stepline .s2{color:var(--heat)} .stepline .s3{color:var(--green)}
+.readout{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.ro{border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.ro .l{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.ro .v{font-family:var(--serif);font-size:24px}
+.ro.b .v{color:var(--cool)} .ro.t .v{color:var(--heat)} .ro.s .v{color:var(--dim)}
+
+/* ladder */
+.rungs{counter-reset:rung;display:grid;gap:14px;margin-top:44px}
+.rung{display:grid;grid-template-columns:64px 1fr auto;gap:20px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px 24px}
+.rung::before{counter-increment:rung;content:counter(rung,decimal-leading-zero);font-family:var(--serif);font-size:30px;color:var(--faint)}
+.rung h3{font-size:19px;margin-bottom:6px}
+.rung p{color:var(--dim);font-size:14.5px;max-width:62ch}
+.badge{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;padding:6px 11px;border-radius:999px;white-space:nowrap;align-self:center}
+.badge.built{background:var(--green-soft);color:var(--green);border:1px solid rgba(143,207,122,.35)}
+.badge.pending{background:var(--amber-soft);color:var(--amber);border:1px solid rgba(240,176,64,.35)}
+.badge.next{background:none;color:var(--faint);border:1px solid var(--line2)}
+
+/* law */
+.law{background:var(--ink2);border:1px solid var(--line2);border-radius:14px;padding:30px;margin-top:44px}
+.law ul{list-style:none;display:grid;gap:12px}
+.law li{font-family:var(--mono);font-size:13.5px;color:var(--dim);padding-left:24px;position:relative;line-height:1.55}
+.law li::before{content:"§";position:absolute;left:0;color:var(--heat)}
+.law li b{color:var(--text);font-weight:700}
+
+/* footer */
+footer{border-top:1px solid var(--line);padding:60px 0 70px;margin-top:40px}
+.frow{display:flex;justify-content:space-between;gap:26px;flex-wrap:wrap;align-items:flex-start}
+.team{font-size:15px;color:var(--dim);line-height:1.8}
+.team b{color:var(--text)}
+.team .aff{font-size:13px;color:var(--faint)}
+.flinks{display:flex;gap:12px;flex-wrap:wrap}
+.fnote{margin-top:34px;font-family:var(--mono);font-size:12px;color:var(--faint)}
+
+@media(max-width:820px){
+  .duo,.ledger{grid-template-columns:1fr}
+  .rung{grid-template-columns:44px 1fr}
+  .rung .badge{grid-column:2}
+  section.wrap{padding-top:96px;padding-bottom:96px}
+  .wrap{padding-left:16px;padding-right:16px}
+  .venue{flex-direction:column;gap:6px}
+  .readout{grid-template-columns:1fr}
+  .stage{padding:18px}
+}
+</style>
+</head>
+<body>
+<div class="bg"><div class="grid"></div></div>
+<div class="blob a"></div><div class="blob b"></div>
+
+<!-- ═══════════ HERO ═══════════ -->
+<header class="hero wrap">
+  <p class="tag">Research system · IEEE BigData 2026 workshop submission</p>
+  <h1><span class="light">TH</span><span class="glow">R</span></h1>
+  <p class="expand">Thermal-Headroom Routing</p>
+  <p class="thesis">In the <span class="h">desert heat</span>, a robot's detector choice now decides how <span class="c">slow its chip</span> gets a minute later. THR checks the <span class="g">temperature forecast</span> first.</p>
+  <p class="sub">A small embedded chip running the biggest detector on every frame hits its thermal limit in about a minute at 45&nbsp;°C. The governor then down-clocks it and <b>every model slows down</b>, the small ones included. THR forecasts the chip temperature in closed form and skips any configuration that would cross the throttle line. Each decision takes <b>about 7&nbsp;µs</b>.</p>
+  <div class="venue">
+    <span class="k">Submitted to</span>
+    <p><b>1st Data and Model Efficiency for Scalable AI Workshop (Efficient AI)</b>, held with IEEE BigData 2026 in Phoenix, AZ, December 14 to 17, 2026. Single-blind, IEEE CS two-column format.</p>
+  </div>
+  <div class="pillrow">
+    <span class="pill p-h"><span class="dot"></span>closed-form thermal forecast</span>
+    <span class="pill p-c"><span class="dot"></span>YOLO11 accuracy-latency frontier</span>
+    <span class="pill p-g"><span class="dot"></span>7 real degraded-camera traces</span>
+  </div>
+  <div class="cta">
+    <a class="btn primary" href="paper/paper.pdf">Read the paper</a>
+    <a class="btn" href="https://github.com/ImSpxrsh/thermal-headroom-routing">GitHub repo</a>
+    <a class="btn" href="https://efficientaiworkshop.github.io/">The workshop</a>
+  </div>
+</header>
+
+<!-- ═══════════ 01 THE PROBLEM ═══════════ -->
+<section class="wrap" id="problem">
+  <span class="eyebrow reveal">The problem</span>
+  <h2 class="reveal">In hot air the router <em>causes</em> its own slowdown.</h2>
+  <p class="lead reveal">Adaptive inference picks a model size and resolution per frame to meet a deadline. Most routers watch latency and back off when it rises. On a hot chip that signal shows up after the damage is done.</p>
+  <div class="duo">
+    <div class="card react reveal">
+      <span class="k">Reactive · watch latency, then back off</span>
+      <h3>Belief-driven routing</h3>
+      <p>Tracks a belief over compute contention from recent latencies. It keeps blackouts near one second, but by the time latency jumps the governor has already throttled. At 45&nbsp;°C it spends 11 to 13% of each mission throttled, and 32 to 38% at 55&nbsp;°C.</p>
+      <div class="verdict">→ responds after the chip is hot</div>
+    </div>
+    <div class="card ahead reveal">
+      <span class="k">Forecast · check headroom before choosing</span>
+      <h3>Thermal-Headroom Routing</h3>
+      <p>Reads the on-die temperature, predicts where an RC thermal model says the chip will be 5&nbsp;s from now under each configuration, and drops any that would cross 88&nbsp;°C. The cheapest model is always allowed, so the router never gets stuck.</p>
+      <div class="verdict">→ 0% throttled at 45 and 55&nbsp;°C</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 02 EVIDENCE ═══════════ -->
+<section class="wrap" id="evidence">
+  <span class="eyebrow reveal">What we measured</span>
+  <h2 class="reveal">Seven traces, eight temperatures, <em>five seeds</em>.</h2>
+  <p class="lead reveal">Closed-loop simulation driven by real camera traces from TartanDrive (off-road), RADIATE (rain, snow, fog, night) and WoodScape (fisheye soiling), with real profiled latencies. Every comparison is a paired 95% interval over seeds.</p>
+  <div class="ledger">
+    <div class="ev pos reveal">
+      <div class="what">Throttling · 45 and 55 °C</div>
+      <div class="num">0% of the mission, on every trace and seed</div>
+      <p>The belief router is throttled 11 to 13% of the time at 45&nbsp;°C and 32 to 38% at 55&nbsp;°C.</p>
+    </div>
+    <div class="ev pos reveal">
+      <div class="what">Deadline misses · vs. belief router</div>
+      <div class="num">3.9 to 7.4 pp fewer <span class="mono" style="font-size:14px">(14 of 14 significant)</span></div>
+      <p>3.9 to 5.5 points at 45&nbsp;°C and 6.5 to 7.4 at 55&nbsp;°C. Energy per on-time frame drops 11% and 13%.</p>
+    </div>
+    <div class="ev neg reveal">
+      <div class="what">Always run the big model · 55 °C</div>
+      <div class="num">91 s blackout, 88% of deadlines missed</div>
+      <p>At 45&nbsp;°C the static heavy policy is throttled 20% of the time and goes 12.5&nbsp;s without a usable detection.</p>
+    </div>
+    <div class="ev neu reveal">
+      <div class="what">Matched-budget control</div>
+      <div class="num">Same miss rate as THR with no thermometer</div>
+      <p>A cap that runs the big model on the same share of frames matches THR on misses (within ±1.0 pp), but still throttles at 55&nbsp;°C on three traces. The gain comes from the budget, and THR is how you find it online.</p>
+    </div>
+  </div>
+  <p class="ledger-note reveal"><b>What it costs:</b> THR serves the big model less often, so pseudo-ground-truth agreement at 45&nbsp;°C falls from 0.975 to 0.949. Below 35&nbsp;°C it makes exactly the same choices as the baseline. The thermal parameters are typical Jetson values that we picked, not measurements, and the paper lists every other limitation.</p>
+</section>
+
+<!-- ═══════════ 03 SYSTEM ═══════════ -->
+<section class="wrap" id="system">
+  <span class="eyebrow reveal">The system</span>
+  <h2 class="reveal">Watch the chip <em>heat up</em>.</h2>
+  <p class="lead reveal">One real two-minute mission at 45&nbsp;°C ambient (RADIATE fog trace, seed 0), straight from the simulation. The belief router climbs into the throttle band again and again. THR stays just under it by mixing the big and medium models.</p>
+
+  <div class="stage reveal">
+    <svg id="demo" viewBox="0 0 640 320" role="img" aria-label="Animated chart of SoC temperature over a two-minute mission at 45 degrees Celsius. The belief router repeatedly reaches the 90 degree throttle threshold; Thermal-Headroom Routing stays near 85 degrees and never throttles.">
+      <g id="axes" font-family="JetBrains Mono,monospace" font-size="11" fill="#6f665a"></g>
+      <rect id="band" x="56" width="560" fill="rgba(255,122,61,.08)"/>
+      <line id="thr" x1="56" x2="616" stroke="#ff7a3d" stroke-width="1" stroke-dasharray="4 4"/>
+      <text id="thrlbl" x="612" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="11" fill="#ff7a3d">throttle 90 °C</text>
+      <line id="rel" x1="56" x2="616" stroke="#a89d8d" stroke-width="1" stroke-dasharray="2 4" opacity=".6"/>
+      <text id="rellbl" x="612" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="11" fill="#a89d8d">release 85 °C</text>
+      <g id="thrmarks"></g>
+      <polyline id="pC1" fill="none" stroke="#a89d8d" stroke-width="1.6" stroke-dasharray="5 4" opacity="0"/>
+      <polyline id="pB" fill="none" stroke="#5bb8d6" stroke-width="2.2"/>
+      <polyline id="pT" fill="none" stroke="#ff7a3d" stroke-width="2.4"/>
+      <circle id="dB" r="4.5" fill="#5bb8d6"/>
+      <circle id="dT" r="4.5" fill="#ff7a3d"/>
+    </svg>
+    <div class="stagebar">
+      <div class="legend">
+        <span><i style="background:#5bb8d6"></i>belief router</span>
+        <span><i style="background:#ff7a3d"></i>THR</span>
+        <span id="lgC1" style="display:none"><i style="background:#a89d8d"></i>always big model</span>
+        <span><i style="background:rgba(91,184,214,.55);height:9px;width:9px"></i>belief router throttled</span>
+      </div>
+      <div class="controls">
+        <button class="replay" id="toggleC1" type="button" aria-pressed="false">+ always big model</button>
+        <button class="replay" id="replay" type="button">↺ replay</button>
+      </div>
+    </div>
+    <div class="readout">
+      <div class="ro s"><div class="l">mission time</div><div class="v" id="rTime">0 s</div></div>
+      <div class="ro b"><div class="l">belief · time throttled</div><div class="v" id="rB">0.0 s</div></div>
+      <div class="ro t"><div class="l">THR · time throttled</div><div class="v" id="rT">0.0 s</div></div>
+    </div>
+    <p class="stepline" id="stepline">&nbsp;</p>
+  </div>
+</section>
+
+<!-- ═══════════ 04 LADDER ═══════════ -->
+<section class="wrap" id="ladder">
+  <span class="eyebrow reveal">Where it goes next</span>
+  <h2 class="reveal">From simulation to a <em>hot chamber</em>.</h2>
+  <p class="lead reveal">Each step keeps the same bar: throttling time, deadline misses and energy per on-time frame, with the matched-budget control alongside.</p>
+  <div class="rungs">
+    <div class="rung reveal">
+      <div><h3>Closed-loop thermal simulation</h3>
+      <p>RC thermal plant driven by the router's own choices, seven real camera traces, ambient sweep from 20 to 55&nbsp;°C, wrong-model tests and heat combined with camera faults.</p></div>
+      <span class="badge built">built · in the paper</span>
+    </div>
+    <div class="rung reveal">
+      <div><h3>Measured thermal parameters</h3>
+      <p>Replace the chosen R<sub>th</sub>, τ and throttle points with values logged by the included <code>tegrastats</code> harness on a Jetson Orin.</p></div>
+      <span class="badge pending">harness ready</span>
+    </div>
+    <div class="rung reveal">
+      <div><h3>Environmental chamber, 25 to 55 °C</h3>
+      <p>Run the routers on real hardware with real DVFS throttling and score them against real annotations instead of agreement with the big model.</p></div>
+      <span class="badge next">planned</span>
+    </div>
+    <div class="rung reveal">
+      <div><h3>Learned duty budget</h3>
+      <p>The matched-budget result says the share of heavy-model frames drives the gain. Learning that share straight from temperature logs would remove the RC model entirely.</p></div>
+      <span class="badge next">future</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 05 LAW ═══════════ -->
+<section class="wrap" id="law">
+  <span class="eyebrow reveal">Results integrity</span>
+  <h2 class="reveal">How we kept ourselves <em>honest</em>.</h2>
+  <div class="law reveal">
+    <ul>
+      <li><b>Settings locked before the first run.</b> Plant parameters, forecast horizon, margin, dwell and slow threshold were fixed in code beforehand. Each result file records <code>eval_labels_used_for_selection: false</code>.</li>
+      <li><b>A control built to beat us.</b> The matched-budget baseline gets THR's own heavy-model budget. It matched THR on misses, and the paper says so.</li>
+      <li><b>Cool air is a negative control.</b> At 35&nbsp;°C and below THR has to make the same choices as the baseline, and it does, to 0.0 pp on every trace.</li>
+      <li><b>Pseudo-ground truth is labeled as such.</b> Accuracy is agreement with the largest model, which tracks real annotations poorly. Miss, throttle and energy numbers do not depend on it.</li>
+      <li><b>No hand-copied numbers.</b> Every figure and table in the paper is generated from <code>outputs/extreme_env/extreme_env.json</code> by <code>src/make_extreme_figures.py</code>.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer class="wrap">
+  <div class="frow">
+    <div class="team">
+      <b>Sparsh Roy</b> · Arhaan Shah · Kevin Zhou · three Paradise Valley co-authors (names coming)<br>
+      <span class="aff">MIT · Hopewell Valley Central High School · Paradise Valley High School</span><br>
+      <span class="aff">Corresponding author: <a href="mailto:sparshr@mit.edu">sparshr@mit.edu</a></span>
+    </div>
+    <div class="flinks">
+      <a class="btn" href="https://github.com/ImSpxrsh/thermal-headroom-routing">Repository</a>
+      <a class="btn" href="paper/paper.pdf">Paper (PDF)</a>
+      <a class="btn" href="https://arxiv.org/abs/2608.00322">Prior work</a>
+    </div>
+  </div>
+  <p class="fnote">Submitted to the Efficient AI Workshop at IEEE BigData 2026 · builds on Belief-Space Perception Routing (arXiv:2608.00322) · page design adapted from SAID Laboratory's MARC site</p>
+</footer>
+
+<script>
+/* scroll reveal */
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .12 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ---- real 45 °C mission traces (fog, seed 0), one sample per second ---- */
+const TRACE = {"static_C1":{"temp":[55.0,56.3,57.6,58.8,60.0,61.2,62.3,63.3,64.4,65.4,66.4,67.3,68.2,69.1,69.9,70.8,71.6,72.3,73.1,73.8,74.5,75.2,75.8,76.4,77.1,77.6,78.2,78.8,79.3,79.8,80.3,80.8,81.3,81.7,82.1,82.6,83.0,83.4,83.8,84.1,84.5,84.8,85.2,85.5,85.8,86.1,86.4,86.7,86.9,87.2,87.5,87.7,88.0,88.2,88.4,88.6,88.8,89.0,89.2,89.4,89.6,89.8,90.0,89.7,89.2,88.7,88.3,87.8,87.4,87.0,86.6,86.2,85.9,85.5,85.2,85.1,85.5,85.8,86.1,86.4,86.7,86.9,87.2,87.5,87.7,87.9,88.2,88.4,88.6,88.8,89.0,89.2,89.4,89.6,89.8,89.9,89.7,89.2,88.8,88.3,87.9,87.5,87.0,86.6,86.3,85.9,85.5,85.2,85.1,85.4,85.8,86.1,86.4,86.6,86.9,87.2,87.4,87.7,87.9,88.2],"thr":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.7,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.6,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},"decoupled":{"temp":[55.0,56.3,57.6,58.8,60.0,61.2,62.3,63.3,64.4,65.4,66.4,67.3,68.2,69.1,69.9,70.8,71.6,72.3,73.1,73.8,74.5,75.2,75.8,76.4,77.1,77.6,78.2,78.8,79.3,79.8,80.3,80.8,81.3,81.7,82.1,82.6,83.0,83.4,83.8,84.1,84.5,84.8,85.2,85.5,85.8,86.1,86.4,86.7,86.9,87.2,87.5,87.7,88.0,88.2,88.4,88.6,88.8,89.0,89.2,89.4,89.6,89.8,90.0,89.4,88.3,87.1,86.1,85.1,84.7,85.1,85.4,85.7,86.0,86.3,86.6,86.9,87.1,87.4,87.7,87.9,88.1,88.4,88.6,88.8,89.0,89.2,89.4,89.6,89.7,89.9,89.7,88.6,87.4,86.4,85.4,84.6,85.0,85.3,85.6,85.9,86.2,86.5,86.8,87.1,87.3,87.6,87.8,88.1,88.3,88.5,88.7,88.9,89.1,89.3,89.5,89.7,89.9,90.0,88.8,87.7],"thr":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.7,1.0,1.0,1.0,1.0,0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.4,1.0,1.0,1.0,1.0,0.4,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.1,1.0,1.0,1.0]},"thermal":{"temp":[55.0,56.3,57.6,58.8,60.0,61.2,62.3,63.3,64.4,65.4,66.4,67.3,68.2,69.1,69.9,70.8,71.6,72.3,73.1,73.8,74.5,75.2,75.8,76.4,77.1,77.6,78.2,78.8,79.3,79.8,80.3,80.8,81.3,81.7,82.1,82.6,83.0,83.4,83.8,84.1,84.5,84.8,85.2,84.7,84.4,84.8,85.1,84.5,84.7,85.0,85.0,84.6,85.0,85.3,84.7,84.6,84.9,85.2,85.6,85.9,85.3,85.4,85.4,85.0,85.3,85.6,85.3,85.2,85.5,85.8,86.1,85.6,85.7,86.0,85.4,85.6,85.4,85.1,85.4,84.9,85.0,85.4,85.3,84.6,84.9,85.3,85.6,85.9,84.9,85.1,84.9,84.7,85.0,85.4,85.2,85.0,85.3,85.6,85.5,84.8,85.1,85.3,84.7,85.1,85.2,84.7,85.0,84.7,84.6,84.9,85.3,84.8,84.5,84.9,84.2,84.5,84.8,85.2,85.1,84.4],"thr":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]}};
+const $ = id => document.getElementById(id);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const X0 = 56, X1 = 616, Y0 = 290, Y1 = 24, TMIN = 50, TMAX = 95, N = TRACE.thermal.temp.length;
+const sx = i => X0 + (X1 - X0) * i / (N - 1);
+const sy = t => Y0 - (Y0 - Y1) * (t - TMIN) / (TMAX - TMIN);
+
+(function drawAxes() {
+  const g = $('axes'); let h = '';
+  for (let t = 50; t <= 95; t += 10) h += `<line x1="${X0}" x2="${X1}" y1="${sy(t)}" y2="${sy(t)}" stroke="rgba(236,224,207,.07)"/><text x="${X0 - 8}" y="${sy(t) + 4}" text-anchor="end">${t}°</text>`;
+  for (let s = 0; s <= 120; s += 30) h += `<text x="${sx(s * (N - 1) / 120)}" y="${Y0 + 20}" text-anchor="middle">${s}s</text>`;
+  g.innerHTML = h;
+  $('thr').setAttribute('y1', sy(90)); $('thr').setAttribute('y2', sy(90)); $('thrlbl').setAttribute('y', sy(90) - 6);
+  $('rel').setAttribute('y1', sy(85)); $('rel').setAttribute('y2', sy(85)); $('rellbl').setAttribute('y', sy(85) + 14);
+  $('band').setAttribute('y', Y1); $('band').setAttribute('height', sy(90) - Y1);
+})();
+
+let raf = null, showC1 = false;
+const line = html => { $('stepline').innerHTML = html; };
+const pts = (arr, k) => arr.slice(0, k + 1).map((t, i) => `${sx(i).toFixed(1)},${sy(t).toFixed(1)}`).join(' ');
+
+function render(k) {
+  $('pB').setAttribute('points', pts(TRACE.decoupled.temp, k));
+  $('pT').setAttribute('points', pts(TRACE.thermal.temp, k));
+  $('pC1').setAttribute('points', pts(TRACE.static_C1.temp, k));
+  $('pC1').setAttribute('opacity', showC1 ? '.8' : '0');
+  $('dB').setAttribute('cx', sx(k)); $('dB').setAttribute('cy', sy(TRACE.decoupled.temp[k]));
+  $('dT').setAttribute('cx', sx(k)); $('dT').setAttribute('cy', sy(TRACE.thermal.temp[k]));
+  let m = '';
+  for (let i = 0; i <= k; i++) if (TRACE.decoupled.thr[i]) m += `<rect x="${sx(i) - 2.4}" y="${Y0 - 6}" width="4.8" height="6" fill="rgba(91,184,214,.55)"/>`;
+  $('thrmarks').innerHTML = m;
+  const thrB = TRACE.decoupled.thr.slice(0, k + 1).reduce((a, b) => a + b, 0);
+  const thrT = TRACE.thermal.thr.slice(0, k + 1).reduce((a, b) => a + b, 0);
+  $('rTime').textContent = `${k} s`;
+  $('rB').textContent = `${thrB.toFixed(1)} s`;
+  $('rT').textContent = `${thrT.toFixed(1)} s`;
+  if (k < 40) line('<b class="s1">both routers</b> · cool chip, both serve the big model on most frames');
+  else if (thrB === 0) line('<b class="s2">THR</b> · forecast says the big model would cross 88 °C, so it starts mixing in the medium model');
+  else line('<b class="s1">belief router</b> · hits 90 °C, governor throttles, every model slows · <b class="s3">THR</b> stays below the line');
+}
+function play() {
+  cancelAnimationFrame(raf);
+  if (reduced) { render(N - 1); return; }
+  const start = performance.now(), dur = 9000;
+  const step = now => {
+    const k = Math.min(N - 1, Math.floor((now - start) / dur * (N - 1)));
+    render(k);
+    if (k < N - 1) raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+}
+$('replay').addEventListener('click', play);
+$('toggleC1').addEventListener('click', e => {
+  showC1 = !showC1;
+  e.currentTarget.setAttribute('aria-pressed', showC1);
+  e.currentTarget.textContent = showC1 ? '− always big model' : '+ always big model';
+  $('lgC1').style.display = showC1 ? 'inline-flex' : 'none';
+  $('pC1').setAttribute('opacity', showC1 ? '.8' : '0');
+});
+render(0);
+new IntersectionObserver((es, obs) => {
+  if (es[0].isIntersecting) { play(); obs.disconnect(); }
+}, { threshold: .45 }).observe($('demo'));
+</script>
+</body>
+</html>
