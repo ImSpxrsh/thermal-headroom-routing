@@ -243,7 +243,7 @@ footer{border-top:1px solid var(--line);padding:60px 0 70px;margin-top:40px}
       <p>At 45&nbsp;°C the static heavy policy is throttled 20% of the time and goes 12.5&nbsp;s without an on-time detection.</p>
     </div>
   </div>
-  <p class="ledger-note reveal"><b>What it costs:</b> THR serves the big model less often, so pseudo-ground-truth agreement at 45&nbsp;°C falls from 0.975 to 0.950. Below 35&nbsp;°C it makes exactly the same choices as the baseline. The thermal parameters are typical Jetson values that we picked, not measurements, and the paper lists every other limitation.</p>
+  <p class="ledger-note reveal"><b>What it costs:</b> THR serves the big model less often, so pseudo-ground-truth agreement at 45&nbsp;°C falls to 0.950, against 0.975 for the belief router. Below 35&nbsp;°C it makes exactly the same choices as the baseline. The thermal parameters are typical Jetson values that we picked, not measurements, and the paper lists every other limitation.</p>
 </section>
 
 <!-- ═══════════ 03 SYSTEM ═══════════ -->
@@ -291,12 +291,12 @@ footer{border-top:1px solid var(--line);padding:60px 0 70px;margin-top:40px}
 <!-- ═══════════ 04 LADDER ═══════════ -->
 <section class="wrap" id="ladder">
   <span class="eyebrow reveal">Where it goes next</span>
-  <h2 class="reveal">From simulation to a <em>hot chamber</em>.</h2>
+  <h2 class="reveal">Simulation first, then a <em>hot chamber</em>.</h2>
   <p class="lead reveal">Each step keeps the same bar: throttling time, deadline misses and energy per on-time frame, with the matched-budget control alongside.</p>
   <div class="rungs">
     <div class="rung reveal">
       <div><h3>Closed-loop thermal simulation</h3>
-      <p>RC thermal plant driven by the router's own choices, seven real camera traces, ambient sweep from 20 to 55&nbsp;°C, wrong-model tests and heat combined with camera faults.</p></div>
+      <p>RC thermal plant driven by the router's own choices, seven real camera traces, ambient sweep between 20 and 55&nbsp;°C, wrong-model tests and heat combined with camera faults.</p></div>
       <span class="badge built">built · in the paper</span>
     </div>
     <div class="rung reveal">

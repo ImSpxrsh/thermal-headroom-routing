@@ -61,8 +61,8 @@ router by 5.8 to 13.3 pp at 45 and 55 °C. Giving THR a wrong thermal model neve
 back; it only shifts THR along the accuracy-timeliness curve.
 
 Accuracy in this project means agreement with the largest model on the same frame, which is a
-pseudo ground truth, so read accuracy numbers as an internal check. The thermal parameters are
-values we chose for a sealed, sun-loaded enclosure, not measurements. The paper's limitations
+pseudo ground truth, so read accuracy numbers as an internal check. We chose the thermal
+parameters for a sealed, sun-loaded enclosure and did not measure them on a Jetson. The paper's limitations
 section has the full list.
 
 ## Reproducing the results
