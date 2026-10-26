@@ -26,30 +26,42 @@ that would push it past the throttle threshold. Each decision takes about 7 µs.
 ## Results
 
 These come from a closed-loop simulation that uses real camera traces and real profiled latencies:
-7 traces, 8 ambient temperatures, 5 seeds.
+7 traces, 8 ambient temperatures, 20 seeds. Significance is Holm-corrected across the 7 traces.
+
+With the deadline at the big model's median latency:
 
 | | 45 °C (Phoenix summer) | 55 °C |
 |---|---|---|
 | Share of mission throttled, belief router vs. THR | 11 to 13 % vs. 0 % | 32 to 38 % vs. 0 % |
-| Drop in deadline-miss rate vs. belief router | 3.9 to 5.5 pp, significant on 7 of 7 | 6.5 to 7.4 pp, significant on 7 of 7 |
-| Energy per on-time frame | 11 % lower | 13 % lower |
+| Drop in deadline-miss rate vs. belief router | 3.9 to 5.4 pp, significant on 7 of 7 | 6.7 to 7.5 pp, significant on 7 of 7 |
+| Energy per on-time frame vs. belief router | 12 % lower | 13 % lower |
 | Longest blackout when always running the big model | 12.5 s | 90.7 s |
 
 At 35 °C and below THR makes exactly the same choices as the baseline.
 
-We also ran a control that uses the big model for the same share of frames as THR but never reads
-the temperature. It gets the same miss rate, although it still throttles at 55 °C on three traces.
-So the miss-rate gain comes from how much heavy inference the router allows, and THR's forecast is
-a cheap way to find that amount online.
+We compared THR against baselines picked to beat it:
+
+- A thermostat that bars the big model above 88 °C also never throttles on the chip it was set for.
+  THR misses 1.3 to 4.4 pp fewer deadlines than that setting on every trace. Sweeping the
+  threshold traces a trade-off curve, and THR lands on it.
+- Every temperature-aware policy (thermostat, duty caps, THR) sits on the same accuracy-timeliness
+  curve, set by the share of big-model frames. A control given THR's own share matches its miss
+  rate, so at one temperature on a known chip the forecast adds little.
+- A cap tuned at 45 °C throttles 16 to 31 % of the time at 50 to 55 °C, where THR misses 3.1 to
+  6.6 pp fewer deadlines.
+- When the real chip runs 20 % hotter than assumed, the thermostat throttles up to 29 % of the time
+  at 55 °C. THR stayed at 0 % on all five chip variants we tried. This is THR's distinct gain.
+- With 25 % deadline slack, the small models still finish on a throttled chip, so throttling costs
+  little. There the belief router has higher on-time utility than THR on 6 of 7 traces.
 
 When camera faults also add compute load, combining THR with fault-aware routing beats the belief
-router by 5.3 to 13.7 pp. Giving THR a wrong thermal resistance or time constant never brought
-throttling back, but it does shift THR along the trade-off between accuracy and timeliness.
+router by 5.8 to 13.3 pp at 45 and 55 °C. Giving THR a wrong thermal model never brought throttling
+back; it only shifts THR along the accuracy-timeliness curve.
 
 Accuracy in this project means agreement with the largest model on the same frame, which is a
 pseudo ground truth, so read accuracy numbers as an internal check. The thermal parameters are
-typical Jetson values that we chose, not measurements. The paper's limitations section has the
-full list.
+values we chose for a sealed, sun-loaded enclosure, not measurements. The paper's limitations
+section has the full list.
 
 ## Reproducing the results
 
@@ -59,7 +71,7 @@ You do not need a GPU or the raw datasets. Everything runs from the cached per-t
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install numpy scipy pandas matplotlib pyyaml python-dotenv
-python src/run_extreme_env.py          # about a minute; writes outputs/extreme_env/extreme_env.json
+python src/run_extreme_env.py          # about 8 minutes; writes outputs/extreme_env/extreme_env.json
 python src/make_extreme_figures.py     # writes paper/figures/*.pdf and paper/tables/*.tex
 cd paper && latexmk -pdf paper.tex
 ```
@@ -67,7 +79,7 @@ cd paper && latexmk -pdf paper.tex
 | File | What it does |
 |---|---|
 | `src/thermal.py` | RC thermal plant, online compute belief, the THR policy, the closed-loop runner, blackout metrics |
-| `src/run_extreme_env.py` | Experiments E1 (bursts), E2 (ambient sweep), E3 (heat plus camera faults), E4 (wrong thermal model) |
+| `src/run_extreme_env.py` | Experiments E1 to E9: bursts, ambient sweep with thermostat and cap baselines, heat plus camera faults, wrong thermal model, deadline sweep, different chips, THR and thermostat settings, fixed-cap curve |
 | `src/make_extreme_figures.py` | Builds every figure and table in the paper from the JSON, so no number is copied by hand |
 | `config.yaml`, `thermal:` section | Plant parameters, set before any run |
 | `src/jetson_harness.py` | Logs real latency plus `tegrastats` temperature and power on a Jetson, to replace the chosen parameters with measured ones |

@@ -125,12 +125,35 @@ class ThermalAwarePolicy:
         return self.hysteresis.step(best)
 
 
+@dataclass
+class ThermostatPolicy:
+    """Reviewer baseline with no forecast: the belief router, except that the most
+    expensive configuration is barred whenever the measured temperature is at or above
+    t_set. Same feasibility/accuracy objective and dwell as every other policy. The
+    a-priori setting t_set = t_hi - margin (88 degC) uses exactly the threshold THR
+    compares its forecast against, so the two differ only in forecasting."""
+    fm: "pol.FrontierModel"
+    hysteresis: "pol.Hysteresis"
+    t_set: float = 88.0
+
+    def decide(self, s_belief: float, c_belief: float, temp_meas: float) -> str:
+        state = "contended" if c_belief >= 0.5 else "nominal"
+        priciest = max(pol.CONFIG_KEYS, key=lambda c: self.fm.cost_rank[c])
+        cands = [c for c in pol.CONFIG_KEYS if not (temp_meas >= self.t_set and c == priciest)]
+        feasible = [c for c in cands if self.fm.p_meet[c][state] >= 0.5]
+        if not feasible:
+            feasible = [max(cands, key=lambda c: self.fm.p_meet[c][state])]
+        best = max(feasible, key=lambda c: self.fm.exp_accuracy(c, s_belief))
+        return self.hysteresis.step(best)
+
+
 def run_closed_loop(kind: str, sub, lat_dists, model: ThermalModel, t_amb: float,
                     rng: np.random.Generator, n_frames: int, kappa: float = 0.0,
                     dwell: int = 10, exo_contention: Optional[np.ndarray] = None,
                     policy_model: Optional[ThermalModel] = None,
                     temp_noise_c: float = 1.0, c1_budget: float = 1.0,
-                    return_trace: bool = False) -> dict:
+                    return_trace: bool = False, duty: Optional[Dict[str, float]] = None,
+                    thr_params: Optional[dict] = None, t_set: float = 88.0) -> dict:
     """Run one policy in closed loop with the thermal plant over n_frames (the real
     trace is tiled to reach a mission-length run). exo_contention (bool per frame of
     the tiled run) adds an exogenous contention source on top of throttling (the
@@ -138,16 +161,20 @@ def run_closed_loop(kind: str, sub, lat_dists, model: ThermalModel, t_amb: float
     (robustness check); the plant always uses `model`.
 
     kind in {static_C1, static_C4, reactive, decoupled, joint, thermal, joint_thermal,
-    duty_matched}. duty_matched is the decoupled policy with a running cap on the
+    duty_matched, fixed_cap, thermostat}. duty_matched / fixed_cap are the decoupled policy with a running cap on the
     fraction of frames served by C1 (c1_budget, set to what the thermal policy used):
     the control for "the thermal policy only wins because it runs C1 less", since it
-    spends the same C1 budget with no knowledge of temperature.
+    spends the same C1 budget with no knowledge of temperature. fixed_cap is the same
+    mechanism with a budget tuned offline at one ambient. thermostat bars C1 while the
+    measured temperature is >= t_set. `duty` overrides the per-config duty (power)
+    model so a deadline sweep does not change power; thr_params overrides THR's
+    horizon_frames / margin_c (sensitivity analysis).
     """
     T0 = sub.T
     idx = np.arange(n_frames) % T0
     s_bel = sub.s_belief[idx]
     acc = {c: sub.acc[c][idx] for c in pol.CONFIG_KEYS}
-    duty = config_duty(sub.fm, lat_dists)
+    duty = duty if duty is not None else config_duty(sub.fm, lat_dists)
     med_nom = {c: float(np.median(lat_dists[c]["nominal"])) for c in pol.CONFIG_KEYS}
     # pre-draw both latency states per (frame, config) so every policy sees identical draws
     Ln = {c: rng.choice(lat_dists[c]["nominal"], size=n_frames) for c in pol.CONFIG_KEYS}
@@ -157,10 +184,13 @@ def run_closed_loop(kind: str, sub, lat_dists, model: ThermalModel, t_amb: float
     hyst = pol.Hysteresis(dwell)
     pm = policy_model or model
     if kind in ("thermal", "joint_thermal"):
-        tp = ThermalAwarePolicy(sub.fm, pm, duty, hyst, kappa=kappa if kind == "joint_thermal" else 0.0)
+        tp = ThermalAwarePolicy(sub.fm, pm, duty, hyst, kappa=kappa if kind == "joint_thermal" else 0.0,
+                                **(thr_params or {}))
+    elif kind == "thermostat":
+        tp = ThermostatPolicy(sub.fm, hyst, t_set=t_set)
     elif kind == "joint":
         tp = pol.JointPolicy(sub.fm, kappa, 0.85, hyst)
-    elif kind in ("decoupled", "duty_matched"):
+    elif kind in ("decoupled", "duty_matched", "fixed_cap"):
         tp = pol.DecoupledPolicy(sub.fm, 0.85, hyst)
     elif kind == "reactive":
         tp = pol.ReactiveLatencyPolicy(sub.fm, 0.85, hyst)
@@ -187,11 +217,13 @@ def run_closed_loop(kind: str, sub, lat_dists, model: ThermalModel, t_amb: float
             ch = "C4"
         elif kind in ("thermal", "joint_thermal"):
             ch = tp.decide(s_bel[t], cb, temp + tnoise[t], t_amb, cb >= 0.5)
+        elif kind == "thermostat":
+            ch = tp.decide(s_bel[t], cb, temp + tnoise[t])
         elif kind == "reactive":
             ch = tp.decide(cb)
         else:
             ch = tp.decide(s_bel[t], cb)
-            if kind == "duty_matched" and ch == "C1" and (n_c1 + 1) / (t + 1) > c1_budget:
+            if kind in ("duty_matched", "fixed_cap") and ch == "C1" and (n_c1 + 1) / (t + 1) > c1_budget:
                 ch = "C2"
                 tp.hysteresis.current = ch
         n_c1 += ch == "C1"

@@ -38,29 +38,29 @@ Kevin Zhou\IEEEauthorrefmark{2},
 % ---------------------------------------------------------------
 \begin{abstract}
 A robot working in a Phoenix summer runs its detector on a small
-embedded processor that heats itself. Once that processor hits its
-thermal limit, the frequency governor throttles it and every detector
-configuration gets slower at the same time. Adaptive inference routers,
-which pick a model size and input resolution for each frame, usually
-treat this slowdown as outside interference. In hot weather the router
-causes it. We model the effect with a lumped RC thermal model wired in
-closed loop to a deadline-constrained router over four YOLO11
-configurations. We also propose Thermal-Headroom Routing (THR), which
-forecasts the processor temperature in closed form before committing
-to a configuration and skips any configuration that would push the chip
-past its throttle threshold. We tested it on seven real traces with
-camera degradation (off-road driving, rain, snow, fog, night, and lens
-soiling), eight ambient temperatures, and five seeds. At 45\degc{} and
-55\degc{} THR never throttled. A router driven only by latency belief
-spent 11 to 38\% of each mission throttled. THR also lowered the
-deadline-miss rate by 3.9 to 7.4 percentage points and energy per
-on-time frame by 11 to 13\%, and it costs about 7\,$\mu$s per frame. At
-35\degc{} and below it makes the same decisions as the baseline. A
-control that gets the same share of heavy-model frames, but no
-temperature reading, reaches the same miss rate. The miss-rate gain
-therefore comes from the amount of heavy inference the router allows.
-What the thermal forecast adds is a way to find that amount online, at
-any ambient temperature, while keeping throttling at zero. Code and
+embedded processor that heats itself. Once the chip reaches its thermal
+limit, the governor throttles it and every detector configuration slows
+down together. Adaptive inference routers pick a model size and input
+resolution per frame and react to latency, which in hot weather arrives
+after the router's own earlier choices have already heated the chip. We
+model this with an RC thermal plant wired in closed loop to a
+deadline-constrained router over four YOLO11 configurations, and
+propose Thermal-Headroom Routing (THR), which forecasts the chip
+temperature in closed form and skips configurations that would cross
+the throttle threshold. We test it on seven real traces with camera
+degradation, eight ambient temperatures and 20 seeds, with Holm
+correction across traces, against a latency-belief router, a
+fixed-threshold thermostat, duty caps tuned offline, and a control
+given THR's own heavy-model budget. With the deadline at the large
+model's median latency, THR never throttles and beats the belief router
+by 3.9 to 7.5 percentage points of deadline misses and 12 to 15\% of
+energy per on-time frame on every trace. All temperature-aware
+policies, THR included, lie on one accuracy-timeliness curve set by
+the share of heavy-model frames, so a thermostat tuned for one chip
+matches THR. THR's distinct gain is robustness: when the chip runs 20\%
+hotter than assumed, the thermostat throttles up to 29\% of the time
+while THR stays at zero. When the deadline has 25\% slack, throttling
+costs little and the belief router wins on on-time utility. Code and
 outputs are public.%
 \footnote{\url{https://github.com/ImSpxrsh/thermal-headroom-routing}}
 \end{abstract}
@@ -74,45 +74,46 @@ edge AI, robot perception, extreme environments
 \section{Introduction}
 
 Consider a Jetson-class module in a sealed enclosure on a robot in the
-Sonoran Desert. The air is at 45\degc. If the perception stack runs its
-largest detector on every frame, the chip reaches its throttle limit in
-about a minute. The governor then down-clocks it, and the small models
-slow down along with the large one until the chip cools
-\cite{bhat2019power}. In our simulations a policy that always runs the
-large model goes blind for 12.5\,s at a stretch at 45\degc, and for
-91\,s at 55\degc{} (we count a blackout as a run of consecutive
-deadline misses).
+Sonoran Desert, with the air at 45\degc. If the perception stack runs
+its largest detector on every frame, the chip reaches its throttle
+limit in about a minute. The governor then down-clocks it, and the
+small models slow down along with the large one until the chip cools
+\cite{bhat2019power,benoitcattin2020throttling}. In our simulations a
+policy that always runs the large model goes 12.5\,s without an on-time
+detection at 45\degc{} and 91\,s at 55\degc.
 
 Adaptive inference is the usual answer to a tight latency budget.
 Early-exit networks and routers choose cheaper computation per input or
 per frame \cite{teerapittayanon2016branchynet,laskaridis2021adaptive,wang2021notallimages},
-and some also watch current compute load. All of them react to latency
-after it has risen. In heat that reaction comes late, because the
-slowdown was set up by earlier choices and lasts for tens of seconds
-once it starts. Thermal-aware scheduling for multiprocessors has dealt
-with this kind of delayed feedback for years
-\cite{coskun2007temperature,skadron2003hotspot}, and planetary rovers
-plan compute around thermal and power limits
-\cite{verma2023perseverance}. Per-frame model selection has not used
-those ideas. Belief-space perception routing \cite{roy2026beliefspace},
-which this work extends, tracks camera-fault and compute-contention
-beliefs together but leaves thermal effects out of its contention model.
+and contention-aware detectors such as ApproxDet \cite{xu2020approxdet}
+also watch the load from co-located applications. These systems react
+to latency once it has risen. On a hot chip that signal arrives late,
+because the slowdown was caused by earlier choices and lasts tens of
+seconds. Thermal-aware DVFS \cite{kim2021ztt} and thermal-aware
+multi-DNN scheduling on phones \cite{jeon2026phoenix} address heat by
+controlling frequency or placement. We ask a narrower question that
+matters for robots with a fixed set of detector configurations: how
+should the router itself use temperature, and how much does a
+temperature forecast add over simpler rules? Belief-space perception
+routing \cite{roy2026beliefspace}, which this work extends, left
+thermal effects out of its contention model.
 
 Our contributions:
 (i) a closed-loop model of thermal contention for adaptive inference,
 in which the router's configuration choice sets the power input to an
 RC thermal node with a hysteretic throttle (\S\ref{sec:model});
 (ii) THR, a closed-form rule that keeps the forecast temperature under
-the throttle limit at about 7\,$\mu$s per frame and works alongside
-fault-aware routing \cite{roy2026beliefspace} (\S\ref{sec:thr});
-(iii) an evaluation on seven real degraded-camera traces over eight
-ambient temperatures, with a cool-weather negative control and a
-matched-budget control in the spirit of the matched-input controls in
-\cite{zhou2026matchedinput}, which tells apart the effect of how much
-heavy inference runs from the effect of when it runs
-(\S\ref{sec:results}); and
-(iv) power, energy and accuracy accounting for every policy, plus a
-test of THR with a wrong thermal model.
+the throttle limit at about 7\,$\mu$s per frame (\S\ref{sec:thr});
+(iii) an evaluation against baselines chosen to beat it: a thermostat,
+duty caps tuned offline, a matched-budget control in the spirit of the
+matched-input controls of \cite{zhou2026matchedinput}, a deadline
+sweep, and five variations of the true chip, with 20 seeds and Holm
+correction (\S\ref{sec:results}); and
+(iv) a clear account of where THR helps and where it does not. The
+gain over latency-only routing comes from rationing the heavy model,
+the forecast's own contribution is robustness to the chip's thermal
+parameters, and with deadline slack, throttling is cheaper than
+rationing.
 
 % ---------------------------------------------------------------
 \section{Related Work}
@@ -122,32 +123,42 @@ test of THR with a wrong thermal model.
 transformers \cite{wang2021notallimages} and early exiting for driving
 \cite{adee2025,navee2025,temporalpatience2023} vary computation with
 the input. Modality gating \cite{dynmm,mees2016choosing,pramr2025}
-decides which sensors to process at all. These methods treat the
-compute budget as fixed or as something they observe. None of them
-models the budget as a state their own decisions change.
+decides which sensors to process. ApproxDet \cite{xu2020approxdet}
+selects detection branches under a latency SLA using measured
+contention from co-located apps. In all of these the compute budget is
+fixed or observed. None treats it as a state the policy's own choices
+drive.
 
-\textit{Sensor- and compute-aware routing.} Belief-space perception
-routing \cite{roy2026beliefspace} tracks blur, illumination and
-occlusion faults per camera channel with switching HMMs, keeps a
-latency-based contention belief, and fuses the two with a noisy-OR
-term. When faults and contention were made to co-occur, that fusion cut
-deadline misses by 1.1 to 9.4 percentage points. Its contention signal
-comes from outside the router and has two states. We reuse its fault
-beliefs, frontier and traces and add a thermal plant that the router
-drives.
+\textit{Thermal behaviour of edge inference.} On a Raspberry Pi, long
+CNN runs throttle within seconds without active cooling, and outdoor
+ambients from 22 to 36\degc{} change throughput by up to 27.7\%
+\cite{benoitcattin2020throttling}. A Jetson AGX Orin in an outdoor
+enclosure throttled under a synthetic stress test at a +40\degc{}
+setpoint (GPU 95.6\degc, CPU 99.0\degc), while a YOLOv8 workload drew
+about half the power and stayed below the threshold
+\cite{krislauks2026orin}. Throttling therefore depends on the model,
+the cooling and the duty cycle, which is why we sweep the plant
+parameters below. Measurements on phone SoCs show throttling dominating
+sustained performance \cite{bhat2019power}.
 
 \textit{Thermal management.} HotSpot-style RC models
 \cite{skadron2003hotspot} and temperature-aware MPSoC scheduling
 \cite{coskun2007temperature} predict hot spots and schedule around
-them. Measurements on commercial phone SoCs show throttling dominating
-sustained performance \cite{bhat2019power}. We apply the same
-forecasting idea to per-frame model selection, where the thing being
-chosen is a point on the accuracy-latency curve.
+them. zTT \cite{kim2021ztt} learns CPU/GPU frequency settings with
+reinforcement learning so that phones avoid throttling. Phoenix
+\cite{jeon2026phoenix} combines processor placement with multi-exit
+networks to delay throttling for multi-DNN video apps. THR works one
+level up: it leaves the governor alone and chooses among detector
+configurations using a temperature forecast. It could run on top of a
+DVFS policy like zTT.
 
-\textit{Datasets.} The traces come from TartanDrive off-road driving
+\textit{Sensor- and compute-aware routing.} Belief-space perception
+routing \cite{roy2026beliefspace} tracks blur, illumination and
+occlusion faults per camera with switching HMMs, keeps a latency-based
+contention belief, and fuses the two with a noisy-OR term. We reuse its
+fault beliefs, frontier and traces from TartanDrive
 \cite{triest2022tartandrive,sivaprakasam2024tartandrive2}, RADIATE
-adverse weather \cite{sheeny2021radiate} and WoodScape fisheye soiling
-\cite{yogamani2019woodscape}.
+\cite{sheeny2021radiate} and WoodScape \cite{yogamani2019woodscape}.
 
 % ---------------------------------------------------------------
 \section{System Model}
@@ -155,42 +166,42 @@ adverse weather \cite{sheeny2021radiate} and WoodScape fisheye soiling
 
 \textit{Frontier and deadline.} There are four configurations, from most
 to least expensive: C1 is YOLO11x at 1280\,px, C2 is YOLO11x at 640, C3
-is YOLO11n at 1280 and C4 is YOLO11n at 640. Their per-frame latencies
-were profiled under normal and contended compute in
-\cite{roy2026beliefspace}. The deadline $D$ is C1's median latency
-under normal compute, between 211 and 341\,ms depending on the trace.
-C1 therefore meets $D$ about half the time on a cool chip and almost
-never on a slowed one. C2, C3 and C4 always meet it. Accuracy is the
-IoU-matched F1 agreement between a configuration's detections and C1's
-on the same frame. The earlier study found that this pseudo-ground
-truth ranks configurations differently from real annotations
-\cite{roy2026beliefspace}, so we treat every accuracy number here as an
-internal consistency check. Deadline-miss, throttling and energy
-results do not depend on it.
+is YOLO11n at 1280 and C4 is YOLO11n at 640, with per-frame latencies
+profiled under normal and contended compute \cite{roy2026beliefspace}.
+The base deadline $D$ is C1's median latency under normal compute,
+between 211 and 341\,ms depending on the trace, so C1 meets $D$ about
+half the time on a cool chip and C2 to C4 always meet it. Section
+\ref{sec:slack} relaxes $D$ to $1.25\times$ and $1.5\times$. Accuracy is
+the IoU-matched F1 agreement between a configuration's detections and
+C1's on the same frame. This pseudo-ground truth ranks configurations
+differently from real annotations \cite{roy2026beliefspace}, so
+accuracy and utility numbers are internal consistency checks. Miss,
+throttling and energy numbers do not depend on it.
 
-\textit{Thermal plant.} We model the SoC as one thermal node with time
-constant $\tau$ and junction-to-ambient resistance $R_{\mathrm{th}}$:
+\textit{Thermal plant.} The SoC is one thermal node with time constant
+$\tau$ and junction-to-ambient resistance $R_{\mathrm{th}}$:
 \begin{equation}
 T_{t+1} = T_t + \tfrac{\Delta t}{\tau}\big(T_{\mathrm{amb}} + R_{\mathrm{th}}\,P_t - T_t\big).
 \label{eq:rc}
 \end{equation}
 Power depends on the configuration $c_t$ served at frame $t$:
-$P_t = s_t\,[P_{\mathrm{idle}} + (P_{\max}-P_{\mathrm{idle}})\,u(c_t)]$.
-Here $u(c)=\min(1,\tilde{\ell}_c/D)$ is the configuration's median
-normal-compute latency as a fraction of the deadline, and $s_t$ is 0.6
-while throttled and 1 otherwise. The governor starts throttling at
+$P_t = s_t\,[P_{\mathrm{idle}} + (P_{\max}-P_{\mathrm{idle}})\,u(c_t)]$,
+where $u(c)=\min(1,\tilde{\ell}_c/D_0)$ is the configuration's median
+normal-compute latency as a fraction of the base deadline $D_0$ (so a
+deadline sweep does not change power), and $s_t$ is 0.6 while
+throttled and 1 otherwise. The governor starts throttling at
 $T\ge T_{\mathrm{hi}}$ and stops at $T\le T_{\mathrm{lo}}$. While it
 throttles, every configuration's latency is drawn from its profiled
 contended distribution, whose p95 is about $2.5\times$ the normal one.
-Table~\ref{tab:params} lists the parameters. They are typical of a
-Jetson Orin module and were chosen before any run, but we did not
-measure them. Running C1 nonstop settles at $T_{\mathrm{amb}}+50$\degc,
-so throttling starts once the air is above 40\degc. The repository
-includes a Jetson harness that logs \texttt{tegrastats} temperature and
-power, which can supply measured values.
+Table~\ref{tab:params} lists the parameters. They describe a sealed,
+sun-loaded enclosure running the large model continuously: running C1
+nonstop settles at $T_{\mathrm{amb}}+50$\degc, so throttling starts once
+the air is above 40\degc. This is harsher than the well-ventilated Orin
+with a lighter YOLOv8 model in \cite{krislauks2026orin}, and we chose
+the values ourselves. Section~\ref{sec:plant} varies the true plant.
 
 \begin{table}[t]
-\caption{Thermal-plant parameters (typical values, fixed before any run).}
+\caption{Thermal-plant parameters (fixed before any run).}
 \label{tab:params}
 \centering\footnotesize
 \begin{tabular}{@{}lc@{\hspace{10pt}}lc@{}}
@@ -202,92 +213,86 @@ $R_{\mathrm{th}}$ & 2.0\,\textdegree C/W & throttled power & $0.6\times$ \\
 \end{tabular}
 \end{table}
 
-\textit{Closed loop.} In \cite{roy2026beliefspace} contention followed
-a fixed schedule, so every policy could be scored against the same
-pre-drawn timeline. Here, whether the chip is throttled at frame $t$
-depends on what the router chose before $t$, so each policy has to run
-in closed loop with the plant. For a given seed, all policies see the
-same pre-drawn latency samples (normal and contended) and the same
-sensor noise.
+\textit{Closed loop.} Whether the chip is throttled at frame $t$
+depends on what the router chose before $t$, so each policy runs in
+closed loop with the plant. For a given seed, all policies see the same
+pre-drawn latency samples (normal and contended), the same camera
+measurement noise and the same temperature-sensor noise.
 
 % ---------------------------------------------------------------
-\section{Thermal-Headroom Routing}
+\section{Policies}
 \label{sec:thr}
 
 All policies use the objective from \cite{roy2026beliefspace}. They
 predict a compute state, keep the configurations whose median latency
 in that state meets $D$, and serve the one with the highest expected
 accuracy given the camera-fault belief $b_f$. A 10-frame dwell keeps
-them from switching back and forth. They differ only in the inputs
-they use.
+them from switching back and forth.
 
-\textit{Online compute belief.} In closed loop the router only learns
-the latency of the configuration it served, and only one frame later.
-We run a two-state forward filter (stay probabilities 0.95 and 0.90) on
-one binary observation: whether the last latency exceeded $1.5\times$
-that configuration's normal median. The filter output is $b_c$.
+\textit{Online compute belief.} In closed loop the router learns only
+the latency of the configuration it served, one frame later. A
+two-state forward filter (stay probabilities 0.95 and 0.90) runs on one
+binary observation, whether that latency exceeded $1.5\times$ the
+configuration's normal median, and outputs $b_c$.
 
-\textit{THR.} Let $\hat T$ be the on-die temperature reading (we add
-Gaussian noise with $\sigma=1$\degc). If the router held configuration
-$c$ for $H$ frames, Eq.~\eqref{eq:rc} gives the temperature in closed
-form:
+\textit{THR.} With the on-die reading $\hat T$ ($\sigma=1$\degc{} noise),
+holding configuration $c$ for $H$ frames gives, from
+Eq.~\eqref{eq:rc},
 \begin{equation}
 \hat T_{H}(c) = T_{\infty}(c) + \big(\hat T - T_{\infty}(c)\big)\big(1-\tfrac{\Delta t}{\tau}\big)^{H},
 \label{eq:forecast}
 \end{equation}
 with $T_{\infty}(c)=T_{\mathrm{amb}}+R_{\mathrm{th}}P(c)$. THR drops $c$
-from consideration when $\hat T_H(c) \ge T_{\mathrm{hi}}-m$, using
-$H=50$ frames and a margin $m=2$\degc. C4 is always allowed, so some
-configuration is always available. Feasibility and accuracy selection
-then run as usual. Each frame costs four evaluations of
-Eq.~\eqref{eq:forecast}. With the belief update and selection included,
-we measured 7.3\,$\mu$s per frame in Python on one Apple M5 core, under
+when $\hat T_H(c) \ge T_{\mathrm{hi}}-m$, with $H=50$ frames (5\,s) and
+$m=2$\degc. C4 is always allowed. Each frame costs four evaluations of
+Eq.~\eqref{eq:forecast}; with the belief update and selection we
+measured 7.3\,$\mu$s per frame in Python on one Apple M5 core, under
 0.004\% of one C1 inference.
 
-\textit{Joint + THR.} Camera faults sometimes come with extra compute
-load, for example when a degraded camera makes localization work
-harder. For that case THR can be combined with the noisy-OR coupling
-of \cite{roy2026beliefspace}, $p_{\mathrm{cont}} = 1-(1-b_c)(1-\kappa b_f)$,
-where $\kappa$ is fit on separate calibration draws.
-
 \textit{Baselines.} Static C1 and Static C4 always serve one
-configuration. Reactive looks at latency only and ignores the camera.
-Belief is the decoupled router of \cite{roy2026beliefspace} using our
-online $b_c$ and no temperature input. Joint adds the fault-coupling
-term to Belief. Matched budget is Belief with a running cap on the
-share of frames that use C1, set to the share THR used for the same
-seed and ambient temperature. It has the same heavy-model budget as THR
-and no temperature reading, which lets us check whether THR helps by
-choosing good moments for C1 or simply by using C1 less.
+configuration. Reactive uses latency only. Belief is the decoupled
+router of \cite{roy2026beliefspace} with the online $b_c$. Thermostat
+is Belief with C1 barred whenever $\hat T\ge88$\degc, the same line THR
+forecasts against, so the two differ only in forecasting. Cap (45\degc)
+and Cap (55\degc) are Belief with a running cap on the share of C1
+frames, set to the share THR used at that ambient. They stand for a
+duty cap tuned once in the lab. Matched budget gets THR's own C1 share
+for each seed and ambient, which tests whether THR helps by timing its
+C1 frames or only by using fewer of them. For heat combined with camera
+faults, Joint adds the noisy-OR fault-coupling term of
+\cite{roy2026beliefspace}, $p_{\mathrm{cont}} = 1-(1-b_c)(1-\kappa b_f)$,
+and Joint\,+\,THR combines it with THR.
 
 % ---------------------------------------------------------------
 \section{Experimental Setup}
 
-\textit{Traces.} We use seven real traces with the frontiers and fault
-labels profiled in \cite{roy2026beliefspace}. Two come from
-TartanDrive: the full trajectory, which has no camera faults and serves
-as a negative control, and a 309-frame stretch of rough terrain. Four
-come from RADIATE (rain, snow, fog, night). The last is WoodScape
-fisheye video with real soiling masks. We repeat each trace to fill a
-1200-frame mission (2 minutes at 10\,Hz) so the chip has time to reach
-thermal steady state.
+\textit{Traces.} Seven real traces with the frontiers and fault labels
+of \cite{roy2026beliefspace}: the full TartanDrive trajectory, which
+has no camera faults and serves as a negative control, a 309-frame
+stretch of rough terrain, RADIATE rain, snow, fog and night, and
+WoodScape fisheye video with real soiling masks. Each trace is repeated
+to fill a 1200-frame mission (2 minutes at 10\,Hz).
 
 \textit{Experiments.} E1 re-scores the original fault-coupled contention
-schedule of \cite{roy2026beliefspace} for bursts of consecutive misses.
-E2 has thermal contention only, at ambient temperatures of 20 to
-55\degc{} in steps of 5. E3 adds the fault-coupled schedule on top of
-thermal throttling. In E4, THR is given a wrong $R_{\mathrm{th}}$ or
-$\tau$ while the plant keeps the true values.
+schedule for bursts of misses. E2 sweeps ambient temperature from 20 to
+55\degc{} with thermal contention only. E3 adds fault-coupled
+contention on top of throttling. E4 gives THR a wrong $R_{\mathrm{th}}$
+or $\tau$. E5 relaxes the deadline. E6 changes the true chip. E7 and E8
+vary THR's $H$ and $m$ and the thermostat threshold, as sensitivity
+analyses. E9 sweeps fixed C1 caps from 0.2 to 1.0.
 
-\textit{Protocol.} We follow the validation-locked protocol of
-\cite{zhou2026matchedinput}. Every tunable (plant parameters, $H$, $m$,
-dwell, the 1.5$\times$ slow threshold) was set in code before the first
-evaluation run, and none was changed after seeing results. Each result
-file records \texttt{eval\_labels\_used\_for\_selection: false}. All
-comparisons use five seeds, which change the latency draws, the camera
-measurement noise and the temperature-sensor noise on the same real
-frames. We report 95\% $t$-intervals on paired per-seed differences
-and mark with $^\ast$ any interval that excludes zero.
+\textit{Protocol.} Following the validation-locked protocol of
+\cite{zhou2026matchedinput}, every setting behind the headline numbers
+(plant parameters, $H$, $m$, dwell, the $1.5\times$ slow threshold, the
+88\degc{} thermostat) was fixed in code before the first evaluation
+run, and each result file records
+\texttt{eval\_labels\_used\_for\_selection: false}. The caps tuned at
+45 and 55\degc{} are fit on the evaluation seeds, which favours them.
+We use 20 seeds, which change latency draws, camera noise and
+temperature-sensor noise on the same real frames. Each comparison is a
+paired $t$-test on per-seed differences, and $^\ast$ marks a difference
+that survives Holm correction across the seven traces of its family at
+$\alpha=0.05$.
 
 % ---------------------------------------------------------------
 \section{Results}
@@ -296,57 +301,50 @@ and mark with $^\ast$ any interval that excludes zero.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{fig_heat_sweep.pdf}
-\caption{Ambient sweep (E2). Lines are the mean over seven traces and
-bands span the lowest and highest trace. Left: deadline-miss rate.
-Middle: share of the mission spent throttled. Right: longest blackout
-in seconds, log scale. THR (red) never throttles. Matched budget
-(purple) has the same miss rate as THR but still throttles at 50 and
-55\degc.}
+\caption{Ambient sweep (E2), base deadline. Lines are the mean over
+seven traces; bands span the lowest and highest trace. Left:
+deadline-miss rate. Middle: share of the mission throttled. Right:
+longest run of consecutive misses (log scale). THR (red) and the
+thermostat never throttle. The cap tuned at 45\degc{} wastes accuracy
+below 45\degc{} (lower miss, Table~\ref{tab:caps}) and throttles above
+it.}
 \label{fig:sweep}
 \end{figure*}
 
 \subsection{Cool air}
-From 20 to 35\degc{} no policy ever brings the chip to $T_{\mathrm{hi}}$.
-THR, Belief, Reactive and Matched budget make the same choice on every
-frame, and their miss rates differ by exactly 0.0 percentage points on
-all seven traces (Fig.~\ref{fig:sweep}). THR only acts differently when
-its forecast says the chip will cross the threshold. At 40\degc{} it
-starts holding C1 back a little early: C1 serves about 93\% of frames
-and pseudo-GT agreement stays between 0.97 and 1.00.
+From 20 to 35\degc{} no policy brings the chip to $T_{\mathrm{hi}}$.
+THR, Belief, Reactive, Thermostat and Matched budget make the same
+choice on every frame and their miss rates differ by exactly 0.0
+percentage points on all seven traces (Fig.~\ref{fig:sweep}). At
+40\degc{} THR starts holding C1 back a little early (C1 on 93 to 94\% of
+frames, agreement 0.97 to 1.00), because its 5\,s forecast already
+crosses 88\degc.
 
-\subsection{Hot air}
+\subsection{Hot air, against latency-only routing}
 Table~\ref{tab:eff} lists miss rate, throttling, blackout length,
-power, energy and accuracy for each policy. Static C1 does badly. At
-45\degc{} it is throttled 20\% of the time and has a 12.5\,s blackout
-on every trace. At 55\degc{} it is throttled 76\% of the time, its
-longest blackout is 91\,s, and it misses 88\% of deadlines.
+power, energy and accuracy for every policy. Static C1 is throttled
+20\% of the time at 45\degc{} with a 12.5\,s blackout, and 76\% of the
+time at 55\degc{} with a 91\,s blackout and 88\% of deadlines missed.
+Belief and Reactive keep blackouts near 1\,s but are throttled 11 to
+13\% of the mission at 45\degc{} and 32 to 38\% at 55\degc, because they
+react after the governor has stepped in (Fig.~\ref{fig:trace}).
 
-Belief and Reactive keep the longest blackout near 1\,s, but they are
-still throttled for 11 to 13\% of the mission at 45\degc{} and 32 to
-39\% at 55\degc. Fig.~\ref{fig:trace} shows why. They respond to the
-slowdown after the governor has already stepped in.
-
-THR was never throttled on any trace, seed or temperature. Compared
-with Belief it lowers the miss rate by 3.9 to 5.5 percentage points at
-45\degc{} and by 6.5 to 7.4 at 55\degc, and every one of those
-fourteen differences is significant (Table~\ref{tab:heat}). Energy per
-on-time frame falls by 11\% at 45\degc{} (3.61 against 4.08\,J) and by
-13\% at 55\degc{} (2.30 against 2.65\,J). THR pays for this with
-accuracy, since it serves C1 less often: mean pseudo-GT agreement at
-45\degc{} goes from 0.975 to 0.949. On-time utility, which scores a
-frame by its accuracy if it is on time and zero otherwise, still rises
-significantly on rain, snow, fog and night at 45\degc{} (by 2.1 to 4.4
-points) and does not change on the other three traces. Static C4 beats
-every policy on timing and energy, with agreement of only 0.695. THR
-sits between the two static policies on the accuracy-timeliness
-trade-off.
+THR was never throttled on any trace, seed or temperature. Against
+Belief it lowers the miss rate by 3.9 to 5.4 points at 45\degc{} and
+6.7 to 7.5 at 55\degc, significant on every trace at both temperatures
+(Table~\ref{tab:heat}). Energy per on-time frame falls by 12\% at
+45\degc{} and 13\% at 55\degc, also on every trace. The price is
+accuracy: mean agreement at 45\degc{} drops from 0.975 to 0.950. On-time
+utility (accuracy if on time, else zero) still rises significantly on
+5 of 7 traces at 45\degc{} and 6 of 7 at 55\degc. Static C4 beats every
+policy on timing and energy at an agreement of 0.695.
 
 \begin{table}[t]
-\caption{Efficiency, quality and cost in E2, averaged over 7 traces.
-Miss and Thr.\ (throttled) in \%. Blackout is the longest run of
-consecutive misses in seconds. $P$ is mean SoC power (W) and
-$E_{\mathrm{ot}}$ is energy per on-time frame (J). Acc.\ is pseudo-GT
-agreement (internal consistency only).}
+\caption{Efficiency, quality and cost in E2 (base deadline), mean over
+7 traces and 20 seeds. Miss and Thr.\ (throttled) in \%. Blackout is
+the longest run of consecutive misses (s). $P$ is mean SoC power (W)
+and $E_{\mathrm{ot}}$ is energy per on-time frame (J). Acc.\ is pseudo-GT
+agreement.}
 \label{tab:eff}
 \centering\footnotesize
 \setlength{\tabcolsep}{3.2pt}
@@ -370,12 +368,12 @@ threshold.}
 \end{figure}
 
 \begin{table*}[t]
-\caption{Heat regime (E2) per trace. Blackout C1 is Static C1's longest
-run of consecutive misses (s). Thr.\ is the \% of the mission spent
-throttled. $\Delta$ is the reduction in deadline-miss rate relative to
-Belief, in percentage points (positive means fewer misses). THR$-$MB
-compares THR with the matched-budget control. $^\ast$: the 95\% CI over
-5 seeds excludes zero.}
+\caption{Heat regime (E2) per trace, base deadline. Blackout C1 is Static
+C1's longest run of consecutive misses (s). Thr.\ is the \% of the
+mission throttled. $\Delta$ THR is the reduction in miss rate relative
+to Belief (pp). THR$-$Tst and THR$-$MB are THR's miss-rate advantage over
+the 88\degc{} thermostat and the matched-budget control (positive means
+THR misses less). $^\ast$: Holm-significant across the seven traces.}
 \label{tab:heat}
 \centering\footnotesize
 \setlength{\tabcolsep}{3pt}
@@ -384,60 +382,164 @@ compares THR with the matched-budget control. $^\ast$: the 95\% CI over
 \toprule
 & \multicolumn{6}{c}{Ambient 45\degc} && \multicolumn{6}{c}{Ambient 55\degc} \\
 \cmidrule{2-7}\cmidrule{9-14}
-Trace & Blackout C1 & Thr.\ Belief & Thr.\ THR & $\Delta$ THR & $\Delta$ MB & THR$-$MB &&
-Blackout C1 & Thr.\ Belief & Thr.\ THR & $\Delta$ THR & $\Delta$ MB & THR$-$MB \\
+Trace & Blackout C1 & Thr.\ Belief & Thr.\ THR & $\Delta$ THR & THR$-$Tst & THR$-$MB &&
+Blackout C1 & Thr.\ Belief & Thr.\ THR & $\Delta$ THR & THR$-$Tst & THR$-$MB \\
 \midrule
 \tabinput{tables/tab_heat_wide.tex}
 \bottomrule
 \end{tabular}}
 \end{table*}
 
-\subsection{Matched budget}
-The matched-budget control uses C1 for the same share of frames as THR,
-but it picks those frames without knowing the temperature. Its miss
-rate is statistically indistinguishable from THR's on every trace at
-both temperatures. The gap is never more than 1.0 percentage point and
-no interval excludes zero (Table~\ref{tab:heat}). So most of THR's
-deadline gain comes from how much C1 it runs. Forecasting the right
-moments adds little on top. Part of the reason is the deadline rule.
-$D$ is C1's median latency, so C1 misses about half its frames even on
-a cool chip, and any policy that uses C1 less will miss less.
+\subsection{Simple temperature rules and the trade-off curve}
+\label{sec:simple}
+A thermostat at 88\degc{} also never throttles. THR misses 1.3 to 1.9
+points fewer deadlines than it at 45\degc{} and 2.9 to 4.4 at 55\degc{}
+(all seven traces), and has higher on-time utility on 6 and 7 traces,
+while the thermostat keeps 0.8 to 1.6 points more accuracy. The
+thermostat threshold is a dial, though. Sweeping it from 84 to 89\degc{}
+(E8) traces an accuracy-timeliness curve, and THR lands on that curve,
+between the 86 and 87\degc{} settings at 45\degc{} and at the 85\degc{}
+setting at 55\degc. Fig.~\ref{fig:pareto} shows the same thing for duty
+caps: every temperature-aware policy sits on the curve traced by fixed
+C1 caps, and the matched-budget control, which spends THR's C1 share
+with no temperature input, matches THR's miss rate on 6 of 7 traces at
+55\degc{} and all 7 at 45\degc. At a single ambient and on the assumed
+chip, the share of C1 frames determines the outcome, and the forecast
+adds little beyond choosing that share well.
 
-The two policies do differ on throttling. At 55\degc{} the matched
-budget is still throttled on rain (4.5\% of the mission), fog (5.8\%)
-and soiling (15.6\%), and those paired differences are significant.
-THR is never throttled. The control also needed THR to tell it the
-budget in the first place. The right C1 share falls from about 0.93 at
-40\degc{} to between 0.48 and 0.56 at 55\degc, so a fixed cap tuned at
-one temperature would waste accuracy or throttle at another. For an
-efficiency-minded deployment, the forecast in THR works as a cheap way
-to estimate the heavy-model budget online. A duty cap that lands on
-the same budget by other means should do equally well on misses.
+Choosing it well across temperatures is harder than it looks. A cap
+tuned at 45\degc{} matches THR at 45\degc, then throttles 16\% of the
+mission at 50\degc{} and 31\% at 55\degc, where THR misses 3.1 to 6.6
+points fewer deadlines on every trace (Table~\ref{tab:caps}). Below
+45\degc{} the same cap gives up 3.6 to 5.4 points of accuracy that THR
+keeps. A cap tuned at 55\degc{} costs 7.1 points of accuracy at
+45\degc{} and 12.1 at 35\degc. The matched budget also needed THR to
+supply its number, and at 55\degc{} it still throttled up to 15.7\% of
+the mission on three traces.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.86\textwidth]{fig_pareto.pdf}
+\caption{Accuracy against deadline-miss rate (E2 and E9), mean over
+seven traces. The grey line is a fixed C1 cap from 0.2 to 1.0. Every
+temperature-aware policy lies on it; Belief sits off the curve at
+55\degc{} because throttling raises its miss rate.}
+\label{fig:pareto}
+\end{figure*}
+
+\begin{table}[t]
+\caption{A C1 cap tuned once at 45\degc{} against THR at other ambients
+(mean over traces). Thr.\ and Miss in \%.}
+\label{tab:caps}
+\centering\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+& \multicolumn{3}{c}{Cap tuned at 45\degc} & \multicolumn{3}{c}{THR} \\
+\cmidrule(lr){2-4}\cmidrule(l){5-7}
+Ambient & Thr. & Miss & Acc. & Thr. & Miss & Acc. \\
+\midrule
+\tabinput{tables/tab_caps.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{A different chip}
+\label{sec:plant}
+The thermostat's threshold and the caps were set for one plant. In E6
+the true chip differs from Table~\ref{tab:params} and THR is given the
+matching model, as if the chip had been characterized
+(Table~\ref{tab:plant}). THR stayed at 0.0\% throttling on all five
+variants, both temperatures and every trace. The 88\degc{} thermostat
+throttled up to 29.0\% of the mission at 55\degc{} when $R_{\mathrm{th}}$
+was 20\% higher, and up to 2.7\% when the chip heated twice as fast
+($\tau\times0.5$). It reacts to the current reading, and a chip that
+overshoots after the reading crosses 88\degc{} reaches 90\degc{} anyway.
+THR looks 5\,s ahead and sees the overshoot coming. THR's miss
+reduction over Belief was significant on all seven traces in every
+variant except the cooler chip at 45\degc, where nothing throttled and
+the difference was exactly zero. On the slow-heating chip
+($\tau\times2$) at 45\degc{} Belief never throttled within the two
+minutes, so THR's 3.7 to 4.4 point gain there comes from rationing C1
+alone.
+
+\begin{table*}[t]
+\caption{A different true chip (E6). THR uses the matching model.
+$\Delta$ THR: reduction in miss rate relative to Belief (pp, range over
+traces) and Holm-significant traces. Max thr.: largest throttled share
+over traces (\%) for Belief, the 88\degc{} thermostat and THR.}
+\label{tab:plant}
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l ccccc c ccccc@{}}
+\toprule
+& \multicolumn{5}{c}{Ambient 45\degc} && \multicolumn{5}{c}{Ambient 55\degc} \\
+\cmidrule{2-6}\cmidrule{8-12}
+True chip & $\Delta$ THR & Sig. & Belief & Tst. & THR && $\Delta$ THR & Sig. & Belief & Tst. & THR \\
+\midrule
+\tabinput{tables/tab_plant.tex}
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{When the deadline has slack}
+\label{sec:slack}
+With $D$ at C1's median, C1 misses about half its frames even on a cool
+chip, so part of every policy's miss reduction comes from running C1
+less. E5 removes that effect (Table~\ref{tab:deadline}). At
+$1.25\times$ and $1.5\times$ the median, C1 meets the deadline on a cool
+chip and only throttling causes misses. Belief then misses just 0.5\% of
+frames at 45\degc{} and 1.0\% at 55\degc, even though it is throttled 12
+and 36\% of the time, because C2 to C4 still finish in time on a slow
+chip and Belief moves to them after one slow frame. THR's miss rate is
+0.0\%, a small but significant difference on every trace. On-time
+utility goes the other way: Belief is significantly better on 6 of 7
+traces (0.970 against 0.950 at 45\degc), since THR's rationing of C1
+costs more accuracy than throttling does. THR still uses 5\% less energy
+per on-time frame (2.17 against 2.28\,J at 45\degc). With deadline
+slack, THR is worth running only when throttling has costs outside
+this metric, such as energy, a planner sharing the SoC, or wear.
+
+\begin{table*}[t]
+\caption{Deadline sweep (E5): means over 7 traces for Belief (B), the
+88\degc{} thermostat (Tst) and THR. U is on-time utility. The last two
+columns count traces where THR is Holm-significantly better / worse than
+Belief on miss rate and on U.}
+\label{tab:deadline}
+\centering\footnotesize
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{@{}ll ccc ccc ccc cc@{}}
+\toprule
+& & \multicolumn{3}{c}{Miss (\%)} & \multicolumn{3}{c}{Throttled (\%)} & \multicolumn{3}{c}{U} & \multicolumn{2}{c}{THR vs B} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}\cmidrule(lr){9-11}\cmidrule(l){12-13}
+$D$ & Amb. & B & Tst & THR & B & Tst & THR & B & Tst & THR & miss & U \\
+\midrule
+\tabinput{tables/tab_deadline.tex}
+\bottomrule
+\end{tabular}
+\end{table*}
 
 \subsection{Heat combined with camera faults}
 E3 adds fault-coupled contention on top of throttling
 (Fig.~\ref{fig:compound}, Table~\ref{tab:compound}). The fault-coupling
-term and THR respond to different problems. On the fault-free
-trajectory the coupling term (Joint) gains exactly 0.0 points, and THR
-gains 5.3 points at 45\degc{} and 8.6 at 55\degc. At 25\degc{} THR adds
-nothing, and Joint\,+\,THR matches Joint exactly. At 45 and 55\degc,
-Joint\,+\,THR beats Belief on all seven traces, by 5.3 to 13.0 points
-and by 6.9 to 13.7 points, and it never falls below Joint alone. At
-55\degc{} Joint by itself is no longer significant on snow and soiling,
-while Joint\,+\,THR is (9.0 and 6.9 points).
+term and THR respond to different causes. On the fault-free trajectory
+Joint gains exactly 0.0 points, while THR gains 6.0 points at 45\degc{}
+and 7.9 at 55\degc. At 25\degc{} THR adds nothing and Joint\,+\,THR
+equals Joint exactly. At 45 and 55\degc{} Joint\,+\,THR beats Belief on
+all seven traces, by 5.8 to 13.1 and 7.3 to 13.3 points, and is never
+below Joint alone.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{fig_compound.pdf}
-\caption{Heat plus fault-coupled contention at 45\degc{} (E3). Bars show
-the reduction in deadline-miss rate relative to Belief, with 95\%
-CIs. Joint\,+\,THR is best or tied on every trace.}
+\caption{Heat plus fault-coupled contention at 45\degc{} (E3): reduction
+in miss rate relative to Belief, 95\% CIs over 20 seeds.}
 \label{fig:compound}
 \end{figure}
 
 \begin{table}[t]
 \caption{E3: reduction in miss rate relative to Belief (pp). J is
-Joint (fault coupling only); J+T is Joint\,+\,THR.}
+Joint; J+T is Joint\,+\,THR. $^\ast$: Holm-significant.}
 \label{tab:compound}
 \centering\footnotesize
 \setlength{\tabcolsep}{3pt}
@@ -452,24 +554,25 @@ Trace & J & J+T & J & J+T & J & J+T \\
 \end{tabular}
 \end{table}
 
-\subsection{Wrong thermal model}
-A real deployment would have to estimate $R_{\mathrm{th}}$ and $\tau$.
-In E4 (Table~\ref{tab:misspec}) we change the model THR believes in
-while leaving the plant alone, at 45\degc. Because THR forecasts from
-the measured temperature, no error we tried brought throttling back on
-any trace. The errors change how cautious THR is. If it thinks
-$R_{\mathrm{th}}$ is 30\% lower than it is, the miss-rate gain shrinks
-to 0.6 to 2.3 points (significant on 5 of 7 traces) and more accuracy
-is kept. Overestimating $R_{\mathrm{th}}$ or underestimating $\tau$
-gives larger miss reductions and lower accuracy. A rough model is
-enough to avoid throttling, and the value of $R_{\mathrm{th}}$ mostly
-decides where THR lands between accuracy and timeliness.
+\subsection{THR's settings and a wrong model}
+Because THR forecasts from the measured temperature, no setting we
+tried brought throttling back in a meaningful way. Over $H\in\{20,50,100\}$
+frames and $m\in\{0,2,4\}$\degc{} (E7), throttling stayed at 0.0\% except
+for the most aggressive setting ($H=20$, $m=0$) at 55\degc, which
+throttled up to 0.6\% of the mission. Longer horizons and larger margins
+move THR down the same curve: at 45\degc{} the miss reduction over
+Belief ranges from 0.5 to 11.0 points and mean agreement from 0.969 to
+0.923, significant on all traces at every setting. A wrong thermal model
+has the same effect (E4, Table~\ref{tab:misspec}). Underestimating
+$R_{\mathrm{th}}$ by 30\% shrinks the miss gain to 0.8 to 1.8 points
+and keeps more accuracy, and overestimating it does the opposite. THR
+has one dial that matters, its effective conservatism, and getting the
+model roughly right is enough to keep the chip out of throttling.
 
 \begin{table}[t]
 \caption{THR with a wrong thermal model at 45\degc{} (E4): range of the
-miss-rate reduction relative to Belief over 7 traces, number of traces
-with a significant reduction, accuracy range, and the largest throttled
-share.}
+miss reduction relative to Belief, Holm-significant traces, accuracy
+range and the largest throttled share.}
 \label{tab:misspec}
 \centering\footnotesize
 \setlength{\tabcolsep}{3.5pt}
@@ -483,19 +586,16 @@ THR's model & $\Delta$ miss (pp) & Sig. & Acc. & Max thr.\ (\%) \\
 \end{table}
 
 \subsection{Bursts of misses under fault-coupled contention}
-A field robot cares about how long it goes without a usable detection,
-and the average miss rate hides that. We re-scored the original
-fault-coupled schedule of \cite{roy2026beliefspace} (E1,
-Table~\ref{tab:bursts}). Fault coupling lowers the share of frames that
-fall inside bursts of three or more misses (0.3\,s) on 4 of 7 traces:
-by 2.7 points on the off-road stretch, 6.3 on fog, 3.3 on night and 1.0
-on soiling. It is exactly zero on the clean trajectory. On no trace
-does it significantly shorten the longest blackout. Coupling makes
-bursts less frequent, but the worst case stays about where it was.
+Re-scoring the original fault-coupled schedule of
+\cite{roy2026beliefspace} (E1, Table~\ref{tab:bursts}), fault coupling
+lowers the share of frames inside bursts of three or more misses
+(0.3\,s) on 6 of 7 traces, by 0.6 to 5.6 points, and is exactly zero
+on the clean trajectory. It shortens the single longest burst
+significantly on only one trace.
 
 \begin{table}[t]
-\caption{Bursts under fault-coupled contention (E1). Burst share is the
-\% of frames inside runs of at least 3 misses. Max run is in frames.}
+\caption{Bursts under fault-coupled contention (E1). Burst share: \% of
+frames in runs of at least 3 misses. Max run in frames.}
 \label{tab:bursts}
 \centering\footnotesize
 \setlength{\tabcolsep}{3.5pt}
@@ -513,45 +613,57 @@ Trace & Belief & Joint & $\Delta$ (pp) & Belief & Joint \\
 % ---------------------------------------------------------------
 \section{Discussion and Limitations}
 
-In a closed-loop simulation built on real camera traces and real
-profiled latencies, a closed-form thermal forecast kept the chip out of
-throttling at a cost of microseconds per frame. It lowered deadline
-misses and energy per on-time frame in hot air, changed nothing below
-40\degc, and worked alongside fault-aware routing. The matched-budget result limits what we can claim. A duty cap
-with no temperature input does as well on misses once it has the same
-budget, so the finding is about budgeting heavy inference. We have not
-shown that THR's choice of when to run C1 matters on its own.
+Three findings hold across every check we ran. Reading the temperature
+is what keeps a router out of throttling; routers that only watch
+latency cannot avoid it. At one ambient on a known chip, the share of
+heavy-model frames sets the accuracy-timeliness point, and a thermostat
+or duty cap at the right setting performs as well as THR. A forecast
+keeps that setting right when the ambient changes and when the chip
+heats faster or settles hotter than expected, where the thermostat and
+fixed caps throttle. We therefore claim robustness for THR, and do not
+claim that it beats a well-tuned rule on a well-characterized chip.
 
-The simulation has clear gaps. The plant is one RC node with typical
-parameters that we did not measure. Throttling reuses the profiled
-contended latency distribution instead of real DVFS states. Latencies
-were measured on an Apple M5 GPU, not an embedded module. Traces are
-repeated to reach mission length. Accuracy is agreement with the
-largest model, which tracks real annotations poorly
-\cite{roy2026beliefspace}, so accuracy and utility numbers only show
-internal consistency. Seeds change noise on fixed frames and do not
+The deadline matters as much as the temperature. With the deadline at
+the large model's median latency, avoiding throttling reduces misses
+and energy. With 25\% slack, the cheaper models absorb throttling, and
+a latency-only router delivers more on-time accuracy than THR.
+Deployments should check which side of that line they are on.
+
+The study is a simulation built on real camera traces and real
+profiled latencies. The plant is one RC node with parameters we chose,
+and throttling reuses the profiled contended latency distribution
+instead of real DVFS states. The real throttle points reported for the
+Jetson AGX Orin are higher (95.6 and 99.0\degc{} \cite{krislauks2026orin}),
+and a lighter model in a ventilated enclosure did not throttle at
+40\degc. Our plant variations cover part of that range, but only
+hardware measurements can settle it. Latencies come from an Apple M5
+GPU. Traces are repeated to reach mission length. Accuracy is
+agreement with the largest model, which tracks real annotations poorly
+\cite{roy2026beliefspace}. Seeds change noise on fixed frames and do not
 stand in for independent missions.
 
-Next, we plan to measure $R_{\mathrm{th}}$, $\tau$ and throttle
-behaviour on a Jetson Orin inside an environmental chamber from 25 to
-55\degc{} using the \texttt{tegrastats} harness, and to score the
-routers against real annotations. We would also like to learn the duty
-budget directly from temperature logs, which would remove the need for
-an RC model.
+Next we plan to measure $R_{\mathrm{th}}$, $\tau$ and throttle behaviour
+on a Jetson Orin in an environmental chamber from 25 to 55\degc{} with
+the included \texttt{tegrastats} harness, score the routers against
+real annotations, and test whether a duty budget learned online from
+temperature logs can replace the RC model.
 
 % ---------------------------------------------------------------
 \section{Conclusion}
 
-On a hot robot, choosing a heavy model now can cause throttling a
+On a hot robot, choosing the large detector now can cause throttling a
 minute later. THR gives the router a closed-form temperature forecast
-that costs microseconds per frame. Across seven real camera traces at
-45 and 55\degc{} the chip never throttled under THR. Deadline misses
-dropped by 3.9 to 7.4 percentage points and energy per on-time frame by
-11 to 13\%, while cool-weather behaviour stayed the same. The
-matched-budget control shows that the share of heavy-model frames is
-what drives the miss-rate gain. Teams building perception for hot
-hardware should estimate that share online from temperature instead of
-fixing it ahead of time.
+that costs microseconds per frame. With a tight deadline it kept the
+chip out of throttling on all seven traces at 45 and 55\degc{} and cut
+deadline misses by 3.9 to 7.5 percentage points and energy per on-time
+frame by 12 to 13\% relative to latency-only routing. A tuned thermostat
+reaches the same operating points on the chip it was tuned for, but
+throttled for up to 29\% of the mission on a chip 20\% hotter than
+assumed, where THR stayed at zero. With deadline slack, throttling is
+cheap and THR's rationing is not worth its accuracy cost. For teams
+building perception on hot hardware, the practical advice is to give
+the router a temperature input, and to use a forecast when the chip's
+thermal behaviour is uncertain.
 
 \section*{Acknowledgment}
 This work builds on the code and traces of belief-space perception
