@@ -62,7 +62,9 @@ back; it only shifts THR along the accuracy-timeliness curve.
 
 Accuracy in this project means agreement with the largest model on the same frame, which is a
 pseudo ground truth, so read accuracy numbers as an internal check. We chose the thermal
-parameters for a sealed, sun-loaded enclosure and did not measure them on a Jetson. The paper's limitations
+parameters for a sealed, sun-loaded enclosure. Heating measured on an Apple M5 under nonstop YOLO11
+(`src/m5_hardware.py`, `src/make_m5_figure.py`) fits the same one-node model within 1 °C, with a
+20 s time constant and 2.8 °C/W against our assumed 30 s and 2.0 °C/W. The M5 never throttled. The paper's limitations
 section has the full list.
 
 ## Reproducing the results

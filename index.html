@@ -243,7 +243,7 @@ footer{border-top:1px solid var(--line);padding:60px 0 70px;margin-top:40px}
       <p>At 45&nbsp;°C the static heavy policy is throttled 20% of the time and goes 12.5&nbsp;s without an on-time detection.</p>
     </div>
   </div>
-  <p class="ledger-note reveal"><b>What it costs:</b> THR serves the big model less often, so pseudo-ground-truth agreement at 45&nbsp;°C falls to 0.950, against 0.975 for the belief router. Below 35&nbsp;°C it makes exactly the same choices as the baseline. The thermal parameters are typical Jetson values that we picked, not measurements, and the paper lists every other limitation.</p>
+  <p class="ledger-note reveal"><b>What it costs:</b> THR serves the big model less often, so pseudo-ground-truth agreement at 45&nbsp;°C falls to 0.950, against 0.975 for the belief router. Below 35&nbsp;°C it makes exactly the same choices as the baseline. We picked the thermal parameters; heating measured on an Apple M5 under nonstop YOLO11 fits the same model within 1&nbsp;°C, with a 20&nbsp;s time constant and 2.8&nbsp;°C/W against our assumed 30&nbsp;s and 2.0&nbsp;°C/W. The M5 never throttled, and the paper lists every other limitation.</p>
 </section>
 
 <!-- ═══════════ 03 SYSTEM ═══════════ -->

@@ -48,7 +48,10 @@ model this with an RC thermal plant wired in closed loop to a
 deadline-constrained router over four YOLO11 configurations, and
 propose Thermal-Headroom Routing (THR), which forecasts the chip
 temperature in closed form and skips configurations that would cross
-the throttle threshold. We test it on seven real traces with camera
+the throttle threshold. Heating measured on an Apple M5 under nonstop
+YOLO11 inference fits the one-node model within 1\degc, with a time
+constant and thermal resistance close to the values we assumed. We test
+THR on seven real traces with camera
 degradation, eight ambient temperatures and 20 seeds, with Holm
 correction across traces, against a latency-belief router, a
 fixed-threshold thermostat, duty caps tuned offline, and a control
@@ -214,7 +217,9 @@ sun-loaded enclosure running the large model continuously: running C1
 nonstop settles at $T_{\mathrm{amb}}+50$\degc, so throttling starts once
 the air is above 40\degc. This is harsher than the well-ventilated Orin
 with a lighter YOLOv8 model in \cite{krislauks2026orin}, and we chose
-the values ourselves. Section~\ref{sec:plant} varies the true plant.
+the values ourselves. Section~\ref{sec:plant} varies the true plant,
+and Section~\ref{sec:m5} compares it with heating measured on an
+Apple M5.
 
 \begin{table}[t]
 \caption{Thermal-plant parameters (fixed before any run).}
@@ -622,6 +627,57 @@ Trace & Belief & Joint & $\Delta$ (pp) & Belief & Joint \\
 \end{tabular}
 \end{table}
 
+\subsection{Heating measured on a real chip}
+\label{sec:m5}
+We had no Jetson, so we measured the Apple M5 laptop whose GPU produced
+the profiled latencies (MacBook Pro, MPS, fp32, on mains power, other
+apps closed apart from a stuck system process drawing about 7\,W of CPU
+throughout). The \texttt{macmon} tool read GPU and CPU temperature,
+power and fan speed four times a second without root access. For C1,
+C2 and C4 we let the chip idle, ran the configuration nonstop for
+7 minutes on $1024\times544$ frames, and fitted the step response of
+Eq.~\eqref{eq:rc} to the GPU temperature (Table~\ref{tab:m5},
+Fig.~\ref{fig:m5}).
+
+A single RC node fits every curve with under 1\degc{} of error. For C1
+the fitted time constant is 20\,s and the resistance 2.8\,\textdegree C/W,
+close to the 30\,s and 2.0\,\textdegree C/W we assumed and inside the range
+of chips tested in \S\ref{sec:plant}; nonstop C1 settles 41\degc{} above
+idle, at 95.6\degc. The fit is a simplification. C4's curve has a
+slower time constant (45\,s) and a higher resistance (3.3\,\textdegree C/W),
+most likely because the fans speed up only under heavy load (5464\,rpm
+after C1 against 2782 after C4), so the effective parameters depend on
+the workload. The M5 never throttled: C1's latency was 187\,ms in the
+first 30\,s and 186\,ms in the last 30\,s. This check therefore supports
+the heating model and the scale of its parameters. It does not
+reproduce throttling, which the fan-cooled laptop avoided.
+
+\begin{table}[t]
+\caption{Apple M5 under nonstop YOLO11 inference. Lat.: median latency
+over the run, its first 30\,s and its last 30\,s (ms). $\Delta P$:
+GPU+CPU power above idle (W). $\tau$ and $\Delta T$: fitted time
+constant (s) and steady-state rise above idle (\degc). $R=\Delta T/\Delta P$
+(\textdegree C/W). RMSE of the fit (\degc).}
+\label{tab:m5}
+\centering\footnotesize
+\setlength{\tabcolsep}{2.6pt}
+\begin{tabular}{@{}lcccccccc@{}}
+\toprule
+Cfg & Lat. & First & Last & $\Delta P$ & $\tau$ & $\Delta T$ & $R$ & RMSE \\
+\midrule
+\tabinput{tables/tab_m5.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_m5.pdf}
+\caption{Apple M5 GPU temperature under nonstop YOLO11 inference (thin)
+with the fitted one-node RC step response (thick).}
+\label{fig:m5}
+\end{figure}
+
 % ---------------------------------------------------------------
 \section{Discussion and Limitations}
 
@@ -642,9 +698,10 @@ a latency-only router delivers more on-time accuracy than THR.
 Deployments should check which side of that line they are on.
 
 The study is a simulation built on real camera traces and real
-profiled latencies. The plant is one RC node with parameters we chose,
-and throttling reuses the profiled contended latency distribution
-instead of real DVFS states. The real throttle points reported for the
+profiled latencies. The plant is one RC node with parameters we chose;
+heating measured on an Apple M5 fits that model with parameters close
+to ours, but the M5 never throttled, so throttling reuses the profiled
+contended latency distribution instead of real DVFS states. The real throttle points reported for the
 Jetson AGX Orin are higher (95.6 and 99.0\degc{} \cite{krislauks2026orin}),
 and a lighter model in a ventilated enclosure did not throttle at
 40\degc. Our plant variations cover part of that range, but only
