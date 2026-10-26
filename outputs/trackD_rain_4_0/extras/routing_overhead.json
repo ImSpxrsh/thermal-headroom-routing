@@ -1,0 +1,14 @@
+{
+  "track": "outputs/trackD_rain_4_0",
+  "T": 2651,
+  "reps": 5,
+  "reference_config": "C1",
+  "reference_median_latency_ms": 228.95727050490677,
+  "belief_fit_and_filter_total_s": 0.0511417500092648,
+  "belief_fit_and_filter_per_frame_us": 19.29149377942844,
+  "belief_fit_and_filter_pct_of_reference_latency": 0.008425805276629119,
+  "policy_decide_total_s": 0.00032233400270342827,
+  "policy_decide_per_frame_us": 0.12158958985417889,
+  "policy_decide_pct_of_reference_latency": 5.310579986651837e-05,
+  "note": "belief_fit_and_filter is an UPPER BOUND (includes one-time HMM parameter fitting, amortized over the trace, not just incremental filtering); policy_decide is the representative steady-state per-frame routing cost given beliefs already being tracked. Both measured on CPU (Apple M5); the router never touches the GPU."
+}

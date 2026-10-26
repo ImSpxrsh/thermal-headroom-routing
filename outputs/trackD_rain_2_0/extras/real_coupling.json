@@ -1,0 +1,24 @@
+{
+  "track": "outputs/trackD_rain_2_0",
+  "load_proxy": "latency",
+  "n_frames": 1500,
+  "high_quantile": 0.75,
+  "measured_Pc_fault": 0.2894736842105263,
+  "measured_Pc_nominal": 0.24427480916030533,
+  "imposed_Pc_fault": 0.85,
+  "imposed_Pc_nominal": 0.05,
+  "corr_fault_load": 0.0891582167865413,
+  "corr_ci": [
+    0.040158475727789064,
+    0.14322700801614435
+  ],
+  "mean_detections": 1.882,
+  "mean_latency_ms": 196.322705880797,
+  "decirc_empirical_kappa": 0.1527777777777778,
+  "decirc_reduction_pp": 0.0,
+  "decirc_lo_pp": 0.0,
+  "decirc_hi_pp": 0.0,
+  "decirc_significant": false,
+  "imposed_reduction_pp": 2.666666666666666,
+  "verdict": "NO/WEAK REAL COUPLING: in this data, compute load does not co-occur with faults beyond chance; the coupled regime is imposed-only (report honestly)."
+}

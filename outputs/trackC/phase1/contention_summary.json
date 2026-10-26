@@ -1,0 +1,10 @@
+{
+  "device": "mps",
+  "p95_nominal_ms": 17.12332112947479,
+  "p95_contended_ms": 42.881776799913496,
+  "p99_nominal_ms": 17.216642936691642,
+  "p99_contended_ms": 44.73619631724431,
+  "median_nominal_ms": 16.696687904186547,
+  "median_contended_ms": 36.17835394106805,
+  "p95_shift_ratio": 2.5042908718274313
+}

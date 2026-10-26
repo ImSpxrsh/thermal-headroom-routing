@@ -1,0 +1,6 @@
+policy,hysteresis,deadline_miss_rate,served_frames,abstain_frames,mean_accuracy,switch_count,switch_rate,onset_to_reconfig,clearance_to_reconfig,abstain_precision,abstain_recall,n_infeasible,n_abstain,tp,fp,fn
+joint,fixed,0.3,300,0,0.9966666666666667,9,0.030100334448160536,2.0,31.0,,0.0,1,0,0,0,1
+joint,model_derived,0.30666666666666664,300,0,0.9866666666666667,14,0.046822742474916385,2.0,31.0,,0.0,1,0,0,0,1
+decoupled,fixed,0.3466666666666667,300,0,0.9966666666666667,9,0.030100334448160536,6.0,31.0,,0.0,1,0,0,0,1
+decoupled,model_derived,0.3466666666666667,300,0,0.9966666666666667,11,0.03678929765886288,6.0,31.0,,0.0,1,0,0,0,1
+memoryless,none,0.24333333333333335,300,0,0.9966666666666667,7,0.023411371237458192,4.0,31.0,,0.0,1,0,0,0,1

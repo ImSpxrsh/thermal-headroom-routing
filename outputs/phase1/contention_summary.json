@@ -1,0 +1,10 @@
+{
+  "device": "cuda",
+  "p95_nominal_ms": 141.80658999321165,
+  "p95_contended_ms": 357.5516150027397,
+  "p99_nominal_ms": 162.72223699270393,
+  "p99_contended_ms": 390.2765539971004,
+  "median_nominal_ms": 138.3242500014603,
+  "median_contended_ms": 348.77735000191024,
+  "p95_shift_ratio": 2.5214033777968705
+}

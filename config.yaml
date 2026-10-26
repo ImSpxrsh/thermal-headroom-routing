@@ -1,0 +1,206 @@
+# =============================================================================
+# Belief-Space Perception Routing under coupled sensor-fault and
+# compute-contention uncertainty.
+#
+# Single source of truth for all paths, seeds, thresholds, regime and track
+# selectors, device, and the deadline rule. Nothing is hardcoded in code that
+# belongs here. Latency-dependent values (the deadline) are filled in after
+# Phase 3 profiling by the rule stated below, not by hand.
+# =============================================================================
+
+meta:
+  project: belief-space-perception-routing
+  pseudo_gt_note: >
+    Task accuracy is AGREEMENT with the reference config (C1) detections on the
+    same frame, not agreement with external ground truth. Any systematic error
+    in C1 is invisible to this metric. This is a modeling choice, stated in code
+    and report.
+
+paths:
+  data_root: data
+  raw_bag: data/raw/turnpike_afternoon_fall_0.bag
+  frames_dir: data/frames/turnpike_afternoon_fall_0
+  outputs_dir: outputs
+  weights_dir: weights
+  cache_dir: data/cache
+
+dataset:
+  name: TartanDrive2
+  source: CMU AirLab public Swift store (bucket tartandrive2)
+  trajectory: 2023-10-26-14-42-35_turnpike_afternoon_fall
+  camera_topic: /multisense/left/image_rect_color
+  image_width: 1024
+  image_height: 544
+  nominal_fps: 10.0
+
+device:
+  # auto resolves to cuda if available, then Apple MPS, then cpu. On CPU/MPS the
+  # precision axis (fp16) collapses to fp32 and is reported as not measurable
+  # locally (see run_on_colab). Set to mps here for this Apple M5 MacBook Pro so
+  # the Metal GPU is used; override with DEVICE=cpu/cuda in .env if needed.
+  mode: mps
+  reportable_env_note: >
+    Reportable latency numbers come from run_on_colab.ipynb on a GPU. Locally
+    measured latencies are dev-environment only and are never the final result.
+
+# Five seeds minimum for every cross-method comparison (autonomy rule 5).
+seeds: [0, 1, 2, 3, 4]
+experiments:
+  n_contention_draws: 5
+  ci_percent: 95
+  # Per-seed sensor measurement noise (std in robust-z units) added to the
+  # degradation observations. The real frames are identical across seeds, so this
+  # is the source of sensor-side variance for CIs and is exactly the condition
+  # under which persistence (RQ-A1) is tested: belief filters noise, memoryless
+  # reacts to it. Applied identically to the belief and memoryless detectors.
+  observation_noise_std: 0.15
+
+# --- Per-frame degradation observations (Phase 1) -----------------------------
+degradation:
+  blur:
+    method: variance_of_laplacian
+  illumination:
+    method: histogram_entropy   # low entropy => washed-out / under-exposed
+  occlusion:
+    method: optical_flow_track_survival
+    max_corners: 200
+    quality_level: 0.01
+    min_distance: 7
+    survival_radius_px: 30.0
+
+# --- Deterministic fault-segment labeling rule (Phase 1, part of the method) --
+# threshold-and-smooth: robust-z on an EMA-smoothed signal, with min-duration
+# and hysteresis so onset and recovery are not chattery. Same rule for all
+# channels; per-channel direction set below (which tail counts as "bad").
+fault_labeling:
+  ema_alpha: 0.3
+  robust_z_threshold: 2.5
+  min_segment_frames: 5
+  recovery_hysteresis_frames: 8
+  direction:
+    blur: low        # low variance-of-laplacian => blurry => bad
+    illumination: low  # low entropy => bad
+    occlusion: low     # low track survival => occluded => bad
+
+# --- Tracks: real (headline) vs controlled injection (validation only) --------
+tracks:
+  A_real:
+    enabled: true
+  B_injection:
+    enabled: true
+    label: VALIDATION_AID_NOT_HEADLINE
+    fault_types: [blur, illumination, occlusion]
+    onset_frame_range: [50, 600]
+    duration_frame_range: [40, 150]
+    n_events_per_run: 3
+    intensity: 0.7
+
+# --- Compute contention + latency harness (Phase 1, 0c) -----------------------
+contention:
+  # Device-appropriate: CPU path for CPU-bound inference, GPU path for GPU-bound.
+  cpu:
+    n_stress_workers: 6
+    mem_pressure_mb: 1024
+  gpu:
+    competitor: second_model_inference   # co-running GPU workload (Colab path)
+    competitor_imgsz: 640
+    stress_h2d_transfer: true
+    competitor_matmul_dim: 2048   # competitor op size (tuned for Apple M5 GPU)
+    competitor_sleep_s: 0.001     # throttle; tuned so contention is ~2-3x, frontier non-degenerate
+    mps_competitor_warmup_s: 3.0  # let the separate-process MPS competitor init Metal before timing
+  latency_window_frames: 30   # sliding window for p95/p99 and queue depth
+  demo_steps: 150             # steps timed per condition in the Phase 1 contention demo
+  states: [nominal, contended]
+
+# --- Coupling regimes (Phase 1) ----------------------------------------------
+regimes:
+  uncoupled:
+    # contention on a fixed periodic schedule, independent of sensor faults
+    period_frames: 120
+    duty_cycle: 0.4
+  coupled:
+    # contention correlates with detected sensor-fault onset
+    onset_to_contention_lag_frames: 3
+    contention_given_fault_prob: 0.85
+    contention_given_nominal_prob: 0.05
+
+# --- Frontier configurations (Phase 3): model x resolution x precision --------
+# On CPU, half is forced False and noted as a GPU-only axis.
+configs:
+  C1: { model: yolo11x, imgsz: 1280, half: true, role: reference_pseudo_gt }
+  C2: { model: yolo11x, imgsz: 640,  half: true }
+  C3: { model: yolo11n, imgsz: 1280, half: true }
+  C4: { model: yolo11n, imgsz: 640,  half: true }
+reference_config: C1
+
+# Extended frontier (Part 1): merged into `configs` only when EXTENDED_FRONTIER=1
+# (used by src/run_extended_frontier.py). Adds intermediate model sizes / resolutions so
+# the accuracy-latency frontier is a dense Pareto curve, not 4 scattered points.
+configs_extended:
+  C5: { model: yolo11x, imgsz: 960, half: true }
+  C6: { model: yolo11m, imgsz: 1280, half: true }
+  C7: { model: yolo11m, imgsz: 640,  half: true }
+  C8: { model: yolo11s, imgsz: 960,  half: true }
+  C9: { model: yolo11s, imgsz: 640,  half: true }
+
+profiling:
+  # Local correctness runs profile on a subset (dev-only, not reportable). Colab
+  # profiles the full set. Set n_frames: 0 to use all extracted frames.
+  n_frames: 300
+  latency_sample_frames: 60   # frames timed per (config, compute-state) for the latency dist
+  iou_threshold: 0.5          # IoU for matched-detection agreement vs C1
+  conf_threshold: 0.25
+  oom_fallback_cpu: true      # if a GPU config OOMs (e.g., C1@1280 on 4GB), fall back to CPU and flag dev-only
+
+deadline:
+  # Rule (locked, section 0a): deadline = median end-to-end latency of the
+  # reference config C1 under NOMINAL compute. Filled by Phase 3, not by hand.
+  rule: median_C1_end_to_end_latency_nominal
+  multiplier: 1.0
+  value_ms: 772.341
+
+# --- Compute HMM (Phase 3) ----------------------------------------------------
+compute_hmm:
+  states: [nominal, contended]
+  features: [p95, p99, queue_depth]
+  init_transition:
+    stay_nominal: 0.95
+    stay_contended: 0.90
+
+# --- Sensor fault belief estimator (Phase 2) ---------------------------------
+sensor_hmm:
+  states: [nominal, degrading, faulted, recovering]
+  # transitions fit from labeled segments with asymmetric onset/recovery;
+  # these are only the initialization priors.
+  init_transition:
+    stay_nominal: 0.92
+    stay_faulted: 0.90
+  emission: gaussian_per_state
+  # how the binary fault labels are expanded into a 4-state sequence for fitting:
+  label_onset_frames: 3       # first frames of a segment count as 'degrading'
+  label_recovery_frames: 5    # frames just after a segment count as 'recovering'
+  min_emission_std: 0.3       # floor on per-state Gaussian std for stability
+  transition_laplace: 1.0     # smoothing on fitted transition counts
+  decision_threshold: 0.5     # P(faulted)+P(degrading) crossing for lag measurement
+
+# --- Routing, baselines, hysteresis, abstention (Phase 4) --------------------
+routing:
+  reliability_target: 0.85     # required expected reliability to commit a config
+  joint:
+    use_coupling: true
+  decoupled_baseline:
+    combine_rule: more_conservative   # fair union of the two separate thresholds
+  hysteresis:
+    fixed:
+      enter_threshold: 0.6
+      exit_threshold: 0.4
+      dwell_frames: 10
+    model_derived:
+      # dwell time set from the fault model's own expected false-transition rate
+      target_false_transition_rate: 0.02
+  abstention:
+    reliability_threshold: 0.85
+  accuracy_floor: 0.5     # a frame is oracle-infeasible if no config meets BOTH deadline and this accuracy
+
+logging:
+  level: INFO

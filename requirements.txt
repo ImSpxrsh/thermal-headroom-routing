@@ -1,0 +1,20 @@
+# Install torch/torchvision from the CUDA index for GPU support, e.g.:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+# then:
+#   pip install -r requirements.txt
+torch
+torchvision
+ultralytics>=8.3.0
+opencv-python
+numpy
+scipy
+pandas
+matplotlib
+pyyaml
+filterpy
+rosbags
+tqdm
+python-dotenv
+lz4
+requests
+gdown

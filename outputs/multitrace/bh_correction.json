@@ -1,0 +1,248 @@
+{
+  "n_tests": 24,
+  "q": 0.05,
+  "n_bh_significant": 0,
+  "dependence_note": "tests share frames (proxies within a sequence) and conditions (sequences); BH controls FDR under positive regression dependence",
+  "tests": [
+    {
+      "track": "trackD_rain_3_0",
+      "proxy": "detections",
+      "mean_pp": 1.26,
+      "p": 0.3728785924760889,
+      "p_source": "ci_inversion",
+      "rank": 1,
+      "bh_threshold": 0.0020833333333333333,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_fog_8_0",
+      "proxy": "latency",
+      "mean_pp": 0.4000000000000001,
+      "p": 0.373900966300059,
+      "p_source": "ci_inversion",
+      "rank": 2,
+      "bh_threshold": 0.004166666666666667,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_fog_8_0",
+      "proxy": "detections",
+      "mean_pp": 0.47,
+      "p": 0.7030098285429915,
+      "p_source": "ci_inversion",
+      "rank": 3,
+      "bh_threshold": 0.00625,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_rain_4_0",
+      "proxy": "detections",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 4,
+      "bh_threshold": 0.008333333333333333,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_rain_4_0",
+      "proxy": "latency",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 5,
+      "bh_threshold": 0.010416666666666668,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_rain_4_0",
+      "proxy": "orb_workload",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "seed_level",
+      "rank": 6,
+      "bh_threshold": 0.0125,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_rain_2_0",
+      "proxy": "detections",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 7,
+      "bh_threshold": 0.014583333333333335,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_rain_2_0",
+      "proxy": "latency",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 8,
+      "bh_threshold": 0.016666666666666666,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_rain_2_0",
+      "proxy": "orb_workload",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "seed_level",
+      "rank": 9,
+      "bh_threshold": 0.018750000000000003,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_rain_3_0",
+      "proxy": "latency",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 10,
+      "bh_threshold": 0.020833333333333336,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_rain_3_0",
+      "proxy": "orb_workload",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "seed_level",
+      "rank": 11,
+      "bh_threshold": 0.02291666666666667,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_snow_1_0",
+      "proxy": "detections",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 12,
+      "bh_threshold": 0.025,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_snow_1_0",
+      "proxy": "latency",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 13,
+      "bh_threshold": 0.027083333333333334,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_snow_1_0",
+      "proxy": "orb_workload",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "seed_level",
+      "rank": 14,
+      "bh_threshold": 0.02916666666666667,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_fog_6_0",
+      "proxy": "detections",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 15,
+      "bh_threshold": 0.03125,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_fog_6_0",
+      "proxy": "latency",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 16,
+      "bh_threshold": 0.03333333333333333,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_fog_6_0",
+      "proxy": "orb_workload",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "seed_level",
+      "rank": 17,
+      "bh_threshold": 0.03541666666666667,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_fog_8_0",
+      "proxy": "orb_workload",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "seed_level",
+      "rank": 18,
+      "bh_threshold": 0.037500000000000006,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_fog_8_1",
+      "proxy": "detections",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 19,
+      "bh_threshold": 0.03958333333333333,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_fog_8_1",
+      "proxy": "latency",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 20,
+      "bh_threshold": 0.04166666666666667,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_fog_8_1",
+      "proxy": "orb_workload",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "seed_level",
+      "rank": 21,
+      "bh_threshold": 0.043750000000000004,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_night_1_0",
+      "proxy": "detections",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 22,
+      "bh_threshold": 0.04583333333333334,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_night_1_0",
+      "proxy": "latency",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "ci_inversion",
+      "rank": 23,
+      "bh_threshold": 0.04791666666666667,
+      "bh_significant": false
+    },
+    {
+      "track": "trackD_night_1_0",
+      "proxy": "orb_workload",
+      "mean_pp": 0.0,
+      "p": 1.0,
+      "p_source": "seed_level",
+      "rank": 24,
+      "bh_threshold": 0.05,
+      "bh_significant": false
+    }
+  ]
+}

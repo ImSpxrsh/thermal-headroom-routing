@@ -1,0 +1,41 @@
+{
+  "trackA": {
+    "blur": {
+      "median_lag_frames": NaN,
+      "segments": 0,
+      "detected": 0,
+      "balanced_acc": 0.5,
+      "tpr": 0.0,
+      "tnr": 1.0,
+      "tp": 0,
+      "tn": 3303,
+      "fp": 0,
+      "fn": 0
+    },
+    "illumination": {
+      "median_lag_frames": 0.0,
+      "segments": 17,
+      "detected": 17,
+      "balanced_acc": 0.8599780166096727,
+      "tpr": 0.7453183520599251,
+      "tnr": 0.9746376811594203,
+      "tp": 199,
+      "tn": 2959,
+      "fp": 77,
+      "fn": 68
+    },
+    "occlusion": {
+      "median_lag_frames": NaN,
+      "segments": 0,
+      "detected": 0,
+      "balanced_acc": 0.5,
+      "tpr": 0.0,
+      "tnr": 1.0,
+      "tp": 0,
+      "tn": 3303,
+      "fp": 0,
+      "fn": 0
+    }
+  },
+  "trackB": {}
+}

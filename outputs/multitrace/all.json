@@ -1,0 +1,175 @@
+{
+  "condition": "all",
+  "n_sequences": 10,
+  "per_sequence_reduction_pp": [
+    2.666666666666666,
+    1.7610062893081762,
+    1.1333333333333324,
+    9.399999999999999,
+    4.533333333333332,
+    4.466666666666665,
+    5.866666666666666,
+    2.799999999999999,
+    1.562216167120802,
+    3.000000000000001
+  ],
+  "cross_sequence_mean_pp": 3.7189889123095634,
+  "t_interval_pp": [
+    1.9385878252972686,
+    5.499389999321858
+  ],
+  "cluster_bootstrap_ci_pp": [
+    2.3988722002296363,
+    5.382982742960944
+  ],
+  "generalizes": true,
+  "per_sequence": [
+    {
+      "track": "outputs/trackD_rain_2_0",
+      "reduction_pp": 2.666666666666666,
+      "joint_miss": 0.42266666666666663,
+      "decoupled_miss": 0.4493333333333333,
+      "seed_ci_pp": [
+        0.7475469635110751,
+        4.585786369822258
+      ],
+      "measured_Pc_fault": 0.2894736842105263,
+      "measured_Pc_nominal": 0.24427480916030533,
+      "corr_fault_load": 0.0891582167865413,
+      "decirc_reduction_pp": 0.0
+    },
+    {
+      "track": "outputs/trackD_rain_3_0",
+      "reduction_pp": 1.7610062893081762,
+      "joint_miss": 0.08679245283018869,
+      "decoupled_miss": 0.10440251572327044,
+      "seed_ci_pp": [
+        0.47782255221712805,
+        3.0441900263992236
+      ],
+      "measured_Pc_fault": 0.23469387755102042,
+      "measured_Pc_nominal": 0.2786885245901639,
+      "corr_fault_load": -0.003034166301392712,
+      "decirc_reduction_pp": 0.0
+    },
+    {
+      "track": "outputs/trackD_rain_4_0",
+      "reduction_pp": 1.1333333333333324,
+      "joint_miss": 0.23266666666666666,
+      "decoupled_miss": 0.244,
+      "seed_ci_pp": [
+        0.18049160300432632,
+        2.0861750636623384
+      ],
+      "measured_Pc_fault": 0.1585677749360614,
+      "measured_Pc_nominal": 0.2822362488728584,
+      "corr_fault_load": -0.12876524032978634,
+      "decirc_reduction_pp": 0.0
+    },
+    {
+      "track": "outputs/trackD_fog_6_0",
+      "reduction_pp": 9.399999999999999,
+      "joint_miss": 0.3286666666666667,
+      "decoupled_miss": 0.42266666666666663,
+      "seed_ci_pp": [
+        7.069696618306226,
+        11.730303381693771
+      ],
+      "measured_Pc_fault": 0.1,
+      "measured_Pc_nominal": 0.25517241379310346,
+      "corr_fault_load": -0.08125447360403659,
+      "decirc_reduction_pp": 0.0
+    },
+    {
+      "track": "outputs/trackD_fog_8_0",
+      "reduction_pp": 4.533333333333332,
+      "joint_miss": 0.36533333333333334,
+      "decoupled_miss": 0.4106666666666666,
+      "seed_ci_pp": [
+        1.5544896483935335,
+        7.512177018273131
+      ],
+      "measured_Pc_fault": 0.2631578947368421,
+      "measured_Pc_nominal": 0.24851632047477745,
+      "corr_fault_load": -0.058231293097630185,
+      "decirc_reduction_pp": 0.4000000000000001
+    },
+    {
+      "track": "outputs/trackD_fog_8_1",
+      "reduction_pp": 4.466666666666665,
+      "joint_miss": 0.3666666666666667,
+      "decoupled_miss": 0.41133333333333333,
+      "seed_ci_pp": [
+        -0.23966030806156918,
+        9.1729936413949
+      ],
+      "measured_Pc_fault": 0.14705882352941177,
+      "measured_Pc_nominal": 0.2575107296137339,
+      "corr_fault_load": -0.08037196326495434,
+      "decirc_reduction_pp": 0.0
+    },
+    {
+      "track": "outputs/trackD_night_1_0",
+      "reduction_pp": 5.866666666666666,
+      "joint_miss": 0.3126666666666667,
+      "decoupled_miss": 0.3713333333333333,
+      "seed_ci_pp": [
+        2.8734808492924913,
+        8.859852484040843
+      ],
+      "measured_Pc_fault": 0.3958333333333333,
+      "measured_Pc_nominal": 0.24517906336088155,
+      "corr_fault_load": -0.007022595067018358,
+      "decirc_reduction_pp": 0.0
+    },
+    {
+      "track": "outputs/trackD_snow_1_0",
+      "reduction_pp": 2.799999999999999,
+      "joint_miss": 0.31333333333333335,
+      "decoupled_miss": 0.3413333333333333,
+      "seed_ci_pp": [
+        -0.5827590573422935,
+        6.182759057342292
+      ],
+      "measured_Pc_fault": 0.30597014925373134,
+      "measured_Pc_nominal": 0.2445095168374817,
+      "corr_fault_load": 0.08220096141262863,
+      "decirc_reduction_pp": 0.0
+    },
+    {
+      "track": "outputs/trackC",
+      "reduction_pp": 1.562216167120802,
+      "joint_miss": 0.25576748410535877,
+      "decoupled_miss": 0.27138964577656677,
+      "seed_ci_pp": [
+        1.01062471138887,
+        2.113807622852734
+      ]
+    },
+    {
+      "track": "outputs/trackA_309",
+      "reduction_pp": 3.000000000000001,
+      "joint_miss": 0.24933333333333332,
+      "decoupled_miss": 0.2793333333333333,
+      "seed_ci_pp": [
+        2.493092795402789,
+        3.506907204597213
+      ]
+    }
+  ],
+  "measured_Pc_fault_mean": 0.23684444219386586,
+  "measured_Pc_nominal_mean": 0.25701095333791324,
+  "corr_fault_load_mean": -0.023415069183206072,
+  "pooled_sign_test": {
+    "positives": 10,
+    "n_nonzero": 10,
+    "p_one_sided": 0.0009765625
+  },
+  "pooled_wilcoxon_p_one_sided": 0.0009765625,
+  "decirc_pooled": {
+    "n": 8,
+    "min_pp": 0.0,
+    "mean_pp": 0.05000000000000001,
+    "n_negative": 0
+  }
+}

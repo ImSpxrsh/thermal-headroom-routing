@@ -1,0 +1,5 @@
+method,regime,deadline_miss,accuracy,kappa
+joint,coupled,0.4053,0.8907,0.79
+decoupled,coupled,0.4227,0.8933,0.79
+joint,uncoupled,0.384,0.8427,0.091
+decoupled,uncoupled,0.384,0.8427,0.091

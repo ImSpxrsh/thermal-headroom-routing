@@ -1,0 +1,30 @@
+{
+  "n_frames": 309,
+  "trackA_fault_frac": 0.3042071197411003,
+  "trackB": {
+    "events": 3,
+    "gt_fault_frac": 0.6407766990291263
+  },
+  "contention": {
+    "device": "cuda",
+    "p95_nominal_ms": 141.80658999321165,
+    "p95_contended_ms": 357.5516150027397,
+    "p99_nominal_ms": 162.72223699270393,
+    "p99_contended_ms": 390.2765539971004,
+    "median_nominal_ms": 138.3242500014603,
+    "median_contended_ms": 348.77735000191024,
+    "p95_shift_ratio": 2.5214033777968705
+  },
+  "regimes": {
+    "uncoupled": {
+      "pearson_r": 0.0591423567483331,
+      "p_contention_given_fault": 0.5106382978723404,
+      "p_contention_given_nominal": 0.44651162790697674
+    },
+    "coupled": {
+      "pearson_r": 0.7386009931810025,
+      "p_contention_given_fault": 0.8085106382978723,
+      "p_contention_given_nominal": 0.07441860465116279
+    }
+  }
+}

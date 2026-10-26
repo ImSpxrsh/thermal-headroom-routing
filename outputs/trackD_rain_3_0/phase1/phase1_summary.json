@@ -1,0 +1,30 @@
+{
+  "n_frames": 159,
+  "trackA_fault_frac": 0.6163522012578616,
+  "trackB": {
+    "events": 2,
+    "gt_fault_frac": 0.4779874213836478
+  },
+  "contention": {
+    "device": "mps",
+    "p95_nominal_ms": 13.789045646990417,
+    "p95_contended_ms": 33.064910597749986,
+    "p99_nominal_ms": 13.81042149165296,
+    "p99_contended_ms": 36.487325166672235,
+    "median_nominal_ms": 13.73456249712035,
+    "median_contended_ms": 28.735583000525367,
+    "p95_shift_ratio": 2.3979114613321117
+  },
+  "regimes": {
+    "uncoupled": {
+      "pearson_r": 0.325461003194165,
+      "p_contention_given_fault": 0.5612244897959183,
+      "p_contention_given_nominal": 0.22950819672131148
+    },
+    "coupled": {
+      "pearson_r": 0.653588544841843,
+      "p_contention_given_fault": 0.7857142857142857,
+      "p_contention_given_nominal": 0.11475409836065574
+    }
+  }
+}

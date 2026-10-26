@@ -1,0 +1,78 @@
+{
+  "condition": "rain",
+  "n_sequences": 3,
+  "per_sequence_reduction_pp": [
+    2.666666666666666,
+    1.7610062893081762,
+    1.1333333333333324
+  ],
+  "cross_sequence_mean_pp": 1.8536687631027249,
+  "t_interval_pp": [
+    -0.061241369450825145,
+    3.768578895656275
+  ],
+  "cluster_bootstrap_ci_pp": [
+    1.1333333333333324,
+    2.666666666666666
+  ],
+  "generalizes": false,
+  "per_sequence": [
+    {
+      "track": "outputs/trackD_rain_2_0",
+      "reduction_pp": 2.666666666666666,
+      "joint_miss": 0.42266666666666663,
+      "decoupled_miss": 0.4493333333333333,
+      "seed_ci_pp": [
+        0.7475469635110751,
+        4.585786369822258
+      ],
+      "measured_Pc_fault": 0.2894736842105263,
+      "measured_Pc_nominal": 0.24427480916030533,
+      "corr_fault_load": 0.0891582167865413,
+      "decirc_reduction_pp": 0.0
+    },
+    {
+      "track": "outputs/trackD_rain_3_0",
+      "reduction_pp": 1.7610062893081762,
+      "joint_miss": 0.08679245283018869,
+      "decoupled_miss": 0.10440251572327044,
+      "seed_ci_pp": [
+        0.47782255221712805,
+        3.0441900263992236
+      ],
+      "measured_Pc_fault": 0.23469387755102042,
+      "measured_Pc_nominal": 0.2786885245901639,
+      "corr_fault_load": -0.003034166301392712,
+      "decirc_reduction_pp": 0.0
+    },
+    {
+      "track": "outputs/trackD_rain_4_0",
+      "reduction_pp": 1.1333333333333324,
+      "joint_miss": 0.23266666666666666,
+      "decoupled_miss": 0.244,
+      "seed_ci_pp": [
+        0.18049160300432632,
+        2.0861750636623384
+      ],
+      "measured_Pc_fault": 0.1585677749360614,
+      "measured_Pc_nominal": 0.2822362488728584,
+      "corr_fault_load": -0.12876524032978634,
+      "decirc_reduction_pp": 0.0
+    }
+  ],
+  "measured_Pc_fault_mean": 0.22757844556586937,
+  "measured_Pc_nominal_mean": 0.2683998608744425,
+  "corr_fault_load_mean": -0.014213729948212581,
+  "pooled_sign_test": {
+    "positives": 3,
+    "n_nonzero": 3,
+    "p_one_sided": 0.125
+  },
+  "pooled_wilcoxon_p_one_sided": null,
+  "decirc_pooled": {
+    "n": 3,
+    "min_pp": 0.0,
+    "mean_pp": 0.0,
+    "n_negative": 0
+  }
+}

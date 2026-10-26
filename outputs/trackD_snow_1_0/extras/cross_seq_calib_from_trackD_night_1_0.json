@@ -1,0 +1,22 @@
+{
+  "calib_track": "outputs/trackD_night_1_0",
+  "test_track": "outputs/trackD_snow_1_0",
+  "transfers": "sensor_fault_HMM + kappa (full belief model, not just the scalar)",
+  "kappa_native_on_test_track": 0.8164528969482528,
+  "kappa_transferred_from_calib_track": 0.8105072463768115,
+  "fault_bacc_native_hmm_on_test": 0.8592879256965944,
+  "fault_bacc_transferred_hmm_on_test": 0.9007961079168509,
+  "fault_bacc_drop_from_transfer": -0.04150818222025654,
+  "rqh_reduction_native_pp": {
+    "mean": 2.799999999999999,
+    "lo": -0.5827590573422935,
+    "hi": 6.182759057342292,
+    "significant": false
+  },
+  "rqh_reduction_full_transfer_pp": {
+    "mean": 2.1999999999999997,
+    "lo": -0.22398481192832595,
+    "hi": 4.6239848119283256,
+    "significant": false
+  }
+}

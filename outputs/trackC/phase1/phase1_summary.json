@@ -1,0 +1,28 @@
+{
+  "track": "C_woodscape_fisheye",
+  "n_frames": 3303,
+  "fault_frac": 0.08083560399636694,
+  "occlusion_is_mask_ground_truth": true,
+  "contention": {
+    "device": "mps",
+    "p95_nominal_ms": 17.12332112947479,
+    "p95_contended_ms": 42.881776799913496,
+    "p99_nominal_ms": 17.216642936691642,
+    "p99_contended_ms": 44.73619631724431,
+    "median_nominal_ms": 16.696687904186547,
+    "median_contended_ms": 36.17835394106805,
+    "p95_shift_ratio": 2.5042908718274313
+  },
+  "regimes": {
+    "uncoupled": {
+      "pearson_r": 0.010402663418711546,
+      "p_contention_given_fault": 0.4232209737827715,
+      "p_contention_given_nominal": 0.4044795783926219
+    },
+    "coupled": {
+      "pearson_r": 0.5557793736914038,
+      "p_contention_given_fault": 0.7228464419475655,
+      "p_contention_given_nominal": 0.06488801054018445
+    }
+  }
+}

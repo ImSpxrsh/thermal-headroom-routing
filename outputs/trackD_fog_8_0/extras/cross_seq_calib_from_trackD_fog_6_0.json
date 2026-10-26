@@ -1,0 +1,22 @@
+{
+  "calib_track": "outputs/trackD_fog_6_0",
+  "test_track": "outputs/trackD_fog_8_0",
+  "transfers": "sensor_fault_HMM + kappa (full belief model, not just the scalar)",
+  "kappa_native_on_test_track": 0.8194898626553304,
+  "kappa_transferred_from_calib_track": 0.7993055555555555,
+  "fault_bacc_native_hmm_on_test": 0.9502943100065402,
+  "fault_bacc_transferred_hmm_on_test": 0.7870503597122301,
+  "fault_bacc_drop_from_transfer": 0.16324395029431005,
+  "rqh_reduction_native_pp": {
+    "mean": 4.533333333333332,
+    "lo": 1.5544896483935335,
+    "hi": 7.512177018273131,
+    "significant": true
+  },
+  "rqh_reduction_full_transfer_pp": {
+    "mean": 17.93333333333333,
+    "lo": 12.361964235888323,
+    "hi": 23.504702430778334,
+    "significant": true
+  }
+}

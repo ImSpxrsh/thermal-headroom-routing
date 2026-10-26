@@ -1,0 +1,22 @@
+{
+  "calib_track": "outputs/trackD_rain_4_0",
+  "test_track": "outputs/trackD_rain_2_0",
+  "transfers": "sensor_fault_HMM + kappa (full belief model, not just the scalar)",
+  "kappa_native_on_test_track": 0.7625,
+  "kappa_transferred_from_calib_track": 0.7973279215288347,
+  "fault_bacc_native_hmm_on_test": 0.7253472222222224,
+  "fault_bacc_transferred_hmm_on_test": 0.7434027777777777,
+  "fault_bacc_drop_from_transfer": -0.01805555555555538,
+  "rqh_reduction_native_pp": {
+    "mean": 2.666666666666666,
+    "lo": 0.7475469635110751,
+    "hi": 4.585786369822258,
+    "significant": true
+  },
+  "rqh_reduction_full_transfer_pp": {
+    "mean": 2.466666666666666,
+    "lo": -0.36476288729787554,
+    "hi": 5.298096220631207,
+    "significant": false
+  }
+}

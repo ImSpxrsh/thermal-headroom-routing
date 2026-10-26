@@ -1,0 +1,230 @@
+{
+  "points": [
+    {
+      "track": "trackD_rain_2_0",
+      "kind": "imposed",
+      "coupling": 0.7625,
+      "onset_per_min": 2.0,
+      "predicted_pp": 1.0458333333333336,
+      "observed_pp": 2.666666666666666
+    },
+    {
+      "track": "trackD_rain_2_0",
+      "kind": "uncoupled-control",
+      "coupling": 0.029861111111111116,
+      "onset_per_min": 2.0,
+      "predicted_pp": 0.017916666666666685,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_rain_2_0",
+      "kind": "measured-real-load",
+      "coupling": 0.045198875050220993,
+      "onset_per_min": 2.0,
+      "predicted_pp": 0.02711932503013262,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_rain_3_0",
+      "kind": "imposed",
+      "coupling": 0.7901315789473684,
+      "onset_per_min": 11.320754716981131,
+      "predicted_pp": 2.3181297583581597,
+      "observed_pp": 1.7610062893081762
+    },
+    {
+      "track": "trackD_rain_3_0",
+      "kind": "uncoupled-control",
+      "coupling": 0.27154605263157894,
+      "onset_per_min": 11.320754716981131,
+      "predicted_pp": 4.831562810327708,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_rain_3_0",
+      "kind": "measured-real-load",
+      "coupling": 0.0,
+      "onset_per_min": 11.320754716981131,
+      "predicted_pp": 0.0,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_rain_4_0",
+      "kind": "imposed",
+      "coupling": 0.7979705733130391,
+      "onset_per_min": 4.300264051301395,
+      "predicted_pp": 1.0131473637962962,
+      "observed_pp": 1.1333333333333324
+    },
+    {
+      "track": "trackD_rain_4_0",
+      "kind": "uncoupled-control",
+      "coupling": 0.018670725520040586,
+      "onset_per_min": 4.300264051301395,
+      "predicted_pp": 0.09031015613482131,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_rain_4_0",
+      "kind": "measured-real-load",
+      "coupling": 0.0,
+      "onset_per_min": 4.300264051301395,
+      "predicted_pp": 0.0,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_fog_6_0",
+      "kind": "imposed",
+      "coupling": 0.795138888888889,
+      "onset_per_min": 0.9025949605114705,
+      "predicted_pp": 0.7248611111111117,
+      "observed_pp": 9.399999999999999
+    },
+    {
+      "track": "trackD_fog_6_0",
+      "kind": "uncoupled-control",
+      "coupling": 0.029861111111111116,
+      "onset_per_min": 0.9025949605114705,
+      "predicted_pp": 0.03185185185185183,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_fog_6_0",
+      "kind": "measured-real-load",
+      "coupling": 0.0,
+      "onset_per_min": 0.9025949605114705,
+      "predicted_pp": 0.0,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_fog_8_0",
+      "kind": "imposed",
+      "coupling": 0.8194898626553304,
+      "onset_per_min": 2.4,
+      "predicted_pp": 0.6520000000000002,
+      "observed_pp": 4.533333333333332
+    },
+    {
+      "track": "trackD_fog_8_0",
+      "kind": "uncoupled-control",
+      "coupling": 0.3696533682145193,
+      "onset_per_min": 2.4,
+      "predicted_pp": 1.3061530412034008,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_fog_8_0",
+      "kind": "measured-real-load",
+      "coupling": 0.014641574262064638,
+      "onset_per_min": 2.4,
+      "predicted_pp": 0.041386849914102526,
+      "observed_pp": 0.4000000000000001
+    },
+    {
+      "track": "trackD_fog_8_1",
+      "kind": "imposed",
+      "coupling": 0.7471428571428571,
+      "onset_per_min": 1.6,
+      "predicted_pp": 0.6329523809523806,
+      "observed_pp": 4.466666666666665
+    },
+    {
+      "track": "trackD_fog_8_1",
+      "kind": "uncoupled-control",
+      "coupling": 0.19785714285714287,
+      "onset_per_min": 1.6,
+      "predicted_pp": 0.2901904761904761,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_fog_8_1",
+      "kind": "measured-real-load",
+      "coupling": 0.0,
+      "onset_per_min": 1.6,
+      "predicted_pp": 0.0,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_night_1_0",
+      "kind": "imposed",
+      "coupling": 0.7971014492753623,
+      "onset_per_min": 2.042360060514372,
+      "predicted_pp": 0.625427145227186,
+      "observed_pp": 5.866666666666666
+    },
+    {
+      "track": "trackD_night_1_0",
+      "kind": "uncoupled-control",
+      "coupling": 0.0,
+      "onset_per_min": 2.042360060514372,
+      "predicted_pp": 0.0,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_night_1_0",
+      "kind": "measured-real-load",
+      "coupling": 0.15065426997245177,
+      "onset_per_min": 2.042360060514372,
+      "predicted_pp": 0.1964659314920625,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_snow_1_0",
+      "kind": "imposed",
+      "coupling": 0.8164528969482528,
+      "onset_per_min": 3.9397450753186565,
+      "predicted_pp": 1.1895944380069525,
+      "observed_pp": 2.799999999999999
+    },
+    {
+      "track": "trackD_snow_1_0",
+      "kind": "uncoupled-control",
+      "coupling": 0.22485625829279082,
+      "onset_per_min": 3.9397450753186565,
+      "predicted_pp": 0.9656953234425438,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackD_snow_1_0",
+      "kind": "measured-real-load",
+      "coupling": 0.06146063241624963,
+      "onset_per_min": 3.9397450753186565,
+      "predicted_pp": 0.24499029455347138,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackC",
+      "kind": "imposed",
+      "coupling": 0.7977180204586164,
+      "onset_per_min": 3.0881017257039054,
+      "predicted_pp": 2.3845071510383877,
+      "observed_pp": 1.562216167120802
+    },
+    {
+      "track": "trackC",
+      "kind": "uncoupled-control",
+      "coupling": 0.0,
+      "onset_per_min": 3.0881017257039054,
+      "predicted_pp": 0.0,
+      "observed_pp": 0.0
+    },
+    {
+      "track": "trackA_309",
+      "kind": "imposed",
+      "coupling": 0.7903119190249948,
+      "onset_per_min": 1.941747572815534,
+      "predicted_pp": 0.7352709495283326,
+      "observed_pp": 3.000000000000001
+    },
+    {
+      "track": "trackA_309",
+      "kind": "uncoupled-control",
+      "coupling": 0.09089031191902498,
+      "onset_per_min": 1.941747572815534,
+      "predicted_pp": 0.0969496660469594,
+      "observed_pp": 0.0
+    }
+  ],
+  "pearson_r": 0.11410784887380596,
+  "mae_pp": 1.3244576103823078
+}

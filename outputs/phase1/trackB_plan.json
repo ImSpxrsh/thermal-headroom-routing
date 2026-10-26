@@ -1,0 +1,23 @@
+{
+  "events": [
+    {
+      "channel": "occlusion",
+      "onset": 214,
+      "duration": 95,
+      "intensity": 0.7
+    },
+    {
+      "channel": "blur",
+      "onset": 129,
+      "duration": 44,
+      "intensity": 0.7
+    },
+    {
+      "channel": "blur",
+      "onset": 54,
+      "duration": 59,
+      "intensity": 0.7
+    }
+  ],
+  "ground_truth_count": 198
+}

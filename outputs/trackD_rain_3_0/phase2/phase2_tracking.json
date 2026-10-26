@@ -1,0 +1,78 @@
+{
+  "trackA": {
+    "blur": {
+      "median_lag_frames": NaN,
+      "segments": 0,
+      "detected": 0,
+      "balanced_acc": 0.5,
+      "tpr": 0.0,
+      "tnr": 1.0,
+      "tp": 0,
+      "tn": 159,
+      "fp": 0,
+      "fn": 0
+    },
+    "illumination": {
+      "median_lag_frames": 0.0,
+      "segments": 1,
+      "detected": 1,
+      "balanced_acc": 0.913953488372093,
+      "tpr": 0.8666666666666667,
+      "tnr": 0.9612403100775194,
+      "tp": 26,
+      "tn": 124,
+      "fp": 5,
+      "fn": 4
+    },
+    "occlusion": {
+      "median_lag_frames": 0.0,
+      "segments": 3,
+      "detected": 3,
+      "balanced_acc": 0.9411764705882353,
+      "tpr": 0.8823529411764706,
+      "tnr": 1.0,
+      "tp": 75,
+      "tn": 74,
+      "fp": 0,
+      "fn": 10
+    }
+  },
+  "trackB": {
+    "blur": {
+      "median_lag_frames": 3.0,
+      "segments": 1,
+      "detected": 1,
+      "balanced_acc": 0.7224308300395257,
+      "tpr": 0.9318181818181818,
+      "tnr": 0.5130434782608696,
+      "tp": 41,
+      "tn": 59,
+      "fp": 56,
+      "fn": 3
+    },
+    "illumination": {
+      "median_lag_frames": NaN,
+      "segments": 0,
+      "detected": 0,
+      "balanced_acc": 0.5,
+      "tpr": 0.0,
+      "tnr": 1.0,
+      "tp": 0,
+      "tn": 159,
+      "fp": 0,
+      "fn": 0
+    },
+    "occlusion": {
+      "median_lag_frames": 0.0,
+      "segments": 1,
+      "detected": 1,
+      "balanced_acc": 0.9831932773109244,
+      "tpr": 1.0,
+      "tnr": 0.9663865546218487,
+      "tp": 40,
+      "tn": 115,
+      "fp": 4,
+      "fn": 0
+    }
+  }
+}

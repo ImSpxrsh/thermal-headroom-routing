@@ -1,0 +1,179 @@
+{
+  "track": "outputs/trackD_night_1_0",
+  "kappa_cal": 0.7971014492753623,
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "deadline_ms": 217.2356041846797,
+  "miss": {
+    "joint": {
+      "mean": 0.3126666666666667,
+      "lo": 0.28610034405100726,
+      "hi": 0.33923298928232615,
+      "n": 5,
+      "sd": 0.021395742047841622,
+      "half_width": 0.02656632261565942
+    },
+    "decoupled": {
+      "mean": 0.3713333333333333,
+      "lo": 0.32301290646705527,
+      "hi": 0.4196537601996113,
+      "n": 5,
+      "sd": 0.03891586366052338,
+      "half_width": 0.04832042686627803
+    },
+    "threshold": {
+      "mean": 0.31733333333333336,
+      "lo": 0.2612366205864298,
+      "hi": 0.3734300460802369,
+      "n": 5,
+      "sd": 0.04517865769487968,
+      "half_width": 0.05609671274690355
+    }
+  },
+  "utility": {
+    "joint": {
+      "mean": 0.6846666666666668,
+      "lo": 0.6597301293758641,
+      "hi": 0.7096032039574695,
+      "n": 5,
+      "sd": 0.020083160441856106,
+      "half_width": 0.024936537290802724
+    },
+    "decoupled": {
+      "mean": 0.626,
+      "lo": 0.5795043298388929,
+      "hi": 0.6724956701611071,
+      "n": 5,
+      "sd": 0.03744625778662295,
+      "half_width": 0.04649567016110709
+    },
+    "threshold": {
+      "mean": 0.6799999999999999,
+      "lo": 0.6257190977595986,
+      "hi": 0.7342809022404013,
+      "n": 5,
+      "sd": 0.043716256828679974,
+      "half_width": 0.05428090224040138
+    }
+  },
+  "joint_minus_threshold_miss": {
+    "mean": -0.004666666666666664,
+    "lo": -0.037334990923986074,
+    "hi": 0.028001657590652745,
+    "n": 5,
+    "sd": 0.02631011634756148,
+    "half_width": 0.03266832425731941,
+    "significant": false
+  },
+  "threshold_vs_decoupled_miss": {
+    "mean": 0.054000000000000006,
+    "lo": 0.03562971274543332,
+    "hi": 0.07237028725456669,
+    "n": 5,
+    "sd": 0.01479489401411477,
+    "half_width": 0.018370287254566683,
+    "significant": true
+  },
+  "utility_joint_minus_decoupled": {
+    "mean": 0.058666666666666666,
+    "lo": 0.02873480849292494,
+    "hi": 0.0885985248404084,
+    "n": 5,
+    "sd": 0.02410624630901937,
+    "half_width": 0.029931858173741725,
+    "significant": true
+  },
+  "rqh_miss_reduction_dec_minus_joint": {
+    "mean": 0.058666666666666666,
+    "lo": 0.028734808492924913,
+    "hi": 0.08859852484040842,
+    "n": 5,
+    "sd": 0.024106246309019395,
+    "half_width": 0.029931858173741752,
+    "significant": true
+  },
+  "bootstrap_miss_reduction": {
+    "block": 50,
+    "B": 2000,
+    "mean_pp": 5.866666666666666,
+    "lo_pp": 3.266666666666666,
+    "hi_pp": 8.666666666666668
+  },
+  "deadline_sweep": [
+    {
+      "mult": 0.8,
+      "deadline_ms": 173.78848334774378,
+      "reduction_pp": 0.0,
+      "lo_pp": 0.0,
+      "hi_pp": 0.0,
+      "significant": false
+    },
+    {
+      "mult": 0.9,
+      "deadline_ms": 195.51204376621172,
+      "reduction_pp": 0.0,
+      "lo_pp": 0.0,
+      "hi_pp": 0.0,
+      "significant": false
+    },
+    {
+      "mult": 1.0,
+      "deadline_ms": 217.2356041846797,
+      "reduction_pp": 5.866666666666666,
+      "lo_pp": 2.8734808492924913,
+      "hi_pp": 8.859852484040843,
+      "significant": true
+    },
+    {
+      "mult": 1.1,
+      "deadline_ms": 238.95916460314768,
+      "reduction_pp": 1.9333333333333333,
+      "lo_pp": 0.3736838471067335,
+      "hi_pp": 3.4929828195599333,
+      "significant": true
+    },
+    {
+      "mult": 1.2,
+      "deadline_ms": 260.6827250216156,
+      "reduction_pp": 1.9333333333333333,
+      "lo_pp": 0.3736838471067335,
+      "hi_pp": 3.4929828195599333,
+      "significant": true
+    }
+  ],
+  "fixed_deadline": [
+    {
+      "hz": 10.0,
+      "deadline_ms": 100.0,
+      "reduction_pp": 1.9333333333333333,
+      "lo_pp": 0.3736838471067335,
+      "hi_pp": 3.4929828195599333,
+      "significant": true
+    },
+    {
+      "hz": 5.0,
+      "deadline_ms": 200.0,
+      "reduction_pp": 0.0,
+      "lo_pp": 0.0,
+      "hi_pp": 0.0,
+      "significant": false
+    }
+  ],
+  "calibration_split": {
+    "kappa_full": 0.7971014492753623,
+    "kappa_split_firsthalf_mean": 0.8626984126984126,
+    "calib_window_fault_frac": 0.16,
+    "test_window_fault_frac": 0.0,
+    "heldout_test_frames": 150,
+    "heldout_reduction_pp": 3.5999999999999996,
+    "lo_pp": -2.2707937402818597,
+    "hi_pp": 9.47079374028186,
+    "significant": false,
+    "note": "held-out test window is fault-sparse; split underpowered"
+  }
+}

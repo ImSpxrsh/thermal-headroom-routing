@@ -1,0 +1,33 @@
+# RADIATE ZED stereo calibration (vendored from the MIT-licensed radiate_sdk
+# config/default-calib.yaml, marcelsheeny/radiate_sdk). Used only to rectify the left
+# camera image to RADIATE's camera_left_rect, matching the SDK's get_rectfied().
+# RADIATE dataset (c) Heriot-Watt University, CC BY-NC-SA 4.0.
+left_cam_calib:
+  fx: 3.379191448899105e+02
+  fy: 3.386957068549526e+02
+  cx: 3.417366010946575e+02
+  cy: 2.007359735313929e+02
+  k1: -0.183879883467351
+  k2: 0.0308609205858947
+  p1: 0.0
+  p2: 0.0
+  res: [672, 376]
+
+right_cam_calib:
+  fx: 337.873451599077
+  fy: 338.530902554779
+  cx: 329.137695760749
+  cy: 186.166590759716
+  k1: -0.181771143569008
+  k2: 0.0295682692890613
+  p1: 0.0
+  p2: 0.0
+  res: [672, 376]
+
+stereo_calib:
+  TX: -120.7469
+  TY: 0.1726
+  TZ: 1.1592
+  R: [[0.999983541478846,   0.000655753417350, -0.005699715684273],
+      [-0.000622470939159,   0.999982758359834,   0.005839136322126],
+      [0.005703446445424,  -0.005835492311203,   0.9999667083098977]]

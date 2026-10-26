@@ -1,0 +1,43 @@
+# Data and large artifacts (never commit raw dataset or extracted frames)
+data/raw/
+data/frames/
+data/cache/
+*.bag
+*.tar
+*.tar.gz
+*.zip
+
+# Model weights
+*.pt
+*.onnx
+*.engine
+weights/
+
+# Python env
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Local env file
+.env
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+
+# Allow outputs (plots/tables) to be committed for review, but ignore bulky intermediates
+outputs/cache/
+outputs/**/*.npy
+
+# dev-run logs (transient)
+outputs/_*.log
+
+# RADIATE dataset (Track D, not committed)
+data/radiate/
+
+# Agent tooling (local only, not part of the research artifact)
+.agents/
+skills-lock.json

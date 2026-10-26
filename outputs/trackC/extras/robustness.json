@@ -1,0 +1,179 @@
+{
+  "track": "outputs/trackC",
+  "kappa_cal": 0.7977180204586164,
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "deadline_ms": 341.0509165842086,
+  "miss": {
+    "joint": {
+      "mean": 0.25576748410535877,
+      "lo": 0.24135351043073922,
+      "hi": 0.2701814577799783,
+      "n": 5,
+      "sd": 0.01160859435038088,
+      "half_width": 0.014413973674619551
+    },
+    "decoupled": {
+      "mean": 0.27138964577656677,
+      "lo": 0.259785948516148,
+      "hi": 0.28299334303698553,
+      "n": 5,
+      "sd": 0.009345279622510664,
+      "half_width": 0.011603697260418754
+    },
+    "threshold": {
+      "mean": 0.25522252497729336,
+      "lo": 0.24087586650731782,
+      "hi": 0.26956918344726893,
+      "n": 5,
+      "sd": 0.011554380646237586,
+      "half_width": 0.014346658469975553
+    }
+  },
+  "utility": {
+    "joint": {
+      "mean": 0.5204280246952289,
+      "lo": 0.5059943783117721,
+      "hi": 0.5348616710786857,
+      "n": 5,
+      "sd": 0.01162443817678297,
+      "half_width": 0.014433646383456816
+    },
+    "decoupled": {
+      "mean": 0.5181761221608081,
+      "lo": 0.5055732771679795,
+      "hi": 0.5307789671536367,
+      "n": 5,
+      "sd": 0.010149964089367441,
+      "half_width": 0.012602844992828604
+    },
+    "threshold": {
+      "mean": 0.5205519969990376,
+      "lo": 0.5057769146007943,
+      "hi": 0.535327079397281,
+      "n": 5,
+      "sd": 0.01189942079307889,
+      "half_width": 0.01477508239824334
+    }
+  },
+  "joint_minus_threshold_miss": {
+    "mean": 0.0005449591280653809,
+    "lo": -7.274058188761585e-05,
+    "hi": 0.0011626588380183778,
+    "n": 5,
+    "sd": 0.0004974773455996014,
+    "half_width": 0.0006176997099529968,
+    "significant": false
+  },
+  "threshold_vs_decoupled_miss": {
+    "mean": 0.016167120799273398,
+    "lo": 0.011133440139825453,
+    "hi": 0.021200801458721344,
+    "n": 5,
+    "sd": 0.004053979713295907,
+    "half_width": 0.005033680659447945,
+    "significant": true
+  },
+  "utility_joint_minus_decoupled": {
+    "mean": 0.0022519025344208687,
+    "lo": -0.0012698617714460665,
+    "hi": 0.005773666840287804,
+    "n": 5,
+    "sd": 0.0028363263418780334,
+    "half_width": 0.0035217643058669352,
+    "significant": false
+  },
+  "rqh_miss_reduction_dec_minus_joint": {
+    "mean": 0.015622161671208019,
+    "lo": 0.0101062471138887,
+    "hi": 0.021138076228527338,
+    "n": 5,
+    "sd": 0.004442356841543961,
+    "half_width": 0.005515914557319319,
+    "significant": true
+  },
+  "bootstrap_miss_reduction": {
+    "block": 50,
+    "B": 2000,
+    "mean_pp": 1.5622161671207992,
+    "lo_pp": 1.138207689978807,
+    "hi_pp": 1.9922797456857395
+  },
+  "deadline_sweep": [
+    {
+      "mult": 0.8,
+      "deadline_ms": 272.8407332673669,
+      "reduction_pp": 0.0,
+      "lo_pp": 0.0,
+      "hi_pp": 0.0,
+      "significant": false
+    },
+    {
+      "mult": 0.9,
+      "deadline_ms": 306.94582492578775,
+      "reduction_pp": 0.0,
+      "lo_pp": 0.0,
+      "hi_pp": 0.0,
+      "significant": false
+    },
+    {
+      "mult": 1.0,
+      "deadline_ms": 341.0509165842086,
+      "reduction_pp": 1.562216167120802,
+      "lo_pp": 1.01062471138887,
+      "hi_pp": 2.113807622852734,
+      "significant": true
+    },
+    {
+      "mult": 1.1,
+      "deadline_ms": 375.1560082426295,
+      "reduction_pp": 0.4904632152588556,
+      "lo_pp": 0.29261351353568493,
+      "hi_pp": 0.6883129169820263,
+      "significant": true
+    },
+    {
+      "mult": 1.2,
+      "deadline_ms": 409.26109990105033,
+      "reduction_pp": 0.4904632152588556,
+      "lo_pp": 0.29261351353568493,
+      "hi_pp": 0.6883129169820263,
+      "significant": true
+    }
+  ],
+  "fixed_deadline": [
+    {
+      "hz": 10.0,
+      "deadline_ms": 100.0,
+      "reduction_pp": 0.0,
+      "lo_pp": 0.0,
+      "hi_pp": 0.0,
+      "significant": false
+    },
+    {
+      "hz": 5.0,
+      "deadline_ms": 200.0,
+      "reduction_pp": 0.0,
+      "lo_pp": 0.0,
+      "hi_pp": 0.0,
+      "significant": false
+    }
+  ],
+  "calibration_split": {
+    "kappa_full": 0.7977180204586164,
+    "kappa_split_firsthalf_mean": 0.7802851900393184,
+    "calib_window_fault_frac": 0.07571168988491823,
+    "test_window_fault_frac": 0.08595641646489104,
+    "heldout_test_frames": 1652,
+    "heldout_reduction_pp": 1.5254237288135601,
+    "lo_pp": 0.9446844357113463,
+    "hi_pp": 2.106163021915774,
+    "significant": true,
+    "note": "held-out test window has faults"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "track": "outputs/trackD_fog_8_0",
+  "load_proxy": "concurrent_orb_workload",
+  "n_frames": 1500,
+  "high_quantile": 0.75,
+  "measured_Pc_fault": 0.21052631578947367,
+  "measured_Pc_nominal": 0.25445103857566764,
+  "corr_fault_load": -0.015467602699696135,
+  "corr_ci": [
+    -0.04774360806797108,
+    -0.009932636203500293
+  ],
+  "mean_orb_workload_ms": 1.5876307336341902,
+  "decirc_empirical_kappa": 0.0,
+  "decirc_reduction_pp": 0.0,
+  "decirc_lo_pp": 0.0,
+  "decirc_hi_pp": 0.0,
+  "decirc_significant": false,
+  "decirc_per_seed_reduction_pp": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "decirc_p_two_sided": 1.0,
+  "imposed_reduction_pp": 4.533333333333332,
+  "verdict": "NO/WEAK REAL COUPLING: the independent concurrent workload's timing does not co-occur with sensor faults beyond chance in this data (report honestly)."
+}
